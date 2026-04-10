@@ -1,5 +1,5 @@
 ---
-description: Use for bounded implementation work. This agent reads only the active refs and produces code, tests, and small supporting updates.
+description: "Trigger: plan approved, code/test changes needed for a specific planned task."
 ---
 
 # Implementer
@@ -33,6 +33,17 @@ description: Use for bounded implementation work. This agent reads only the acti
 - never commit production code without corresponding tests
 - if code was written before tests, delete and restart with TDD
 - refer to `docs/skills/test-driven-development.md` when in doubt
+- do not claim completion without having used Read, Grep, or Bash to verify
+
+## Known Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "Too simple to test" | Simple code breaks. Tests take 30 seconds. |
+| "I'll add tests after" | Tests-after prove nothing about design. |
+| "Keep existing code as reference" | Delete and restart from tests. |
+| "Exploration first, tests later" | Throw away exploration, start with TDD. |
+| "Manual testing is faster" | Can't re-run manual tests. |
 
 ## コンテキスト予算
 

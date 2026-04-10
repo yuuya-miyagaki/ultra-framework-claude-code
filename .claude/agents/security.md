@@ -1,5 +1,5 @@
 ---
-description: Use for security-focused review and residual-risk analysis. This agent is diff-based by default and only broadens scope when the change demands it.
+description: "Trigger: change touches auth, secrets, data exposure, or untrusted input."
 ---
 
 # Security
@@ -33,6 +33,16 @@ description: Use for security-focused review and residual-risk analysis. This ag
 - do not act as a general reviewer
 - do not claim security is complete without evidence
 - avoid generic checklist output that is not tied to the change
+- do not claim completion without having used Read, Grep, or Bash to verify
+
+## Known Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "Internal only, no threat" | Internal apps get compromised. |
+| "Framework handles it" | Verify the framework actually handles it. |
+| "Low probability" | Low probability times high impact equals high risk. |
+| "Will fix later" | Security debt is the most expensive debt. |
 
 ## コンテキスト予算
 

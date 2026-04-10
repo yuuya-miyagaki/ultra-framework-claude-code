@@ -4,13 +4,12 @@
 
 - Use this project with a thin Claude Code operating model.
 - Claude is the orchestrator and should stay in control of routing.
-- Hard gates require explicit user approval before crossing them.
-- Completion claims must point to evidence, not chat confidence.
+- Hard gates require explicit user approval.
+- Completion claims require evidence, not chat confidence.
 - Load only the documents required for the current task.
 - Use framework phases, not `EnterPlanMode`.
 - Persist project lessons in `docs/LEARNINGS.md`, not auto-memory.
-- Stop after 3 consecutive failures on the same error. Do not retry with the
-  same approach — report the blocker to the user.
+- Stop after 3 consecutive failures on the same error and report the blocker.
 - Never run destructive commands (`push --force`, `reset --hard`, `rm -rf`,
   `DROP`, branch deletion) without explicit user approval.
 
@@ -19,9 +18,8 @@
 1. Read `docs/STATUS.md`.
 2. Read only the `current_refs` relevant to the task.
 3. Pull extra docs only when a dependency appears.
-4. Invoke a subagent only when specialist isolation reduces risk or context.
-5. Update `docs/STATUS.md` when the active phase, refs, blockers, or next step
-   change.
+4. Invoke a subagent only when isolation reduces risk or context.
+5. Update `docs/STATUS.md` when phase, refs, blockers, or next step change.
 
 ## State Machine
 
@@ -76,17 +74,20 @@ Dev verification by task type:
 - Use `security` for security-focused review and residual risk notes.
 - Use `ui` only for UI or UX-heavy work.
 
+- Use `reviewer-testing`, `reviewer-performance`, `reviewer-maintainability`
+  as parallel review specialists when diff-scope warrants.
+
 Default: use subagents only when they make work clearer, safer, or smaller.
 
 ## Context Budget Policy
 
 - Always-on context is limited to `CLAUDE.md` and `docs/STATUS.md`.
-- Prefer repo files over long chat history.
+- Prefer repo files over chat history.
 - Keep detailed reads pull-based.
-- Avoid opening more than three detailed docs at once unless blocked.
-- Summarize at phase transitions, not after every micro-step.
-- Keep `docs/STATUS.md` short and current rather than replaying prior sessions.
-- Update `docs/STATUS.md` before long pauses or likely context compression.
+- Avoid opening more than three detailed docs at once.
+- Summarize at phase transitions, not after every step.
+- Keep `docs/STATUS.md` short and current.
+- Update `docs/STATUS.md` before pauses or context compression.
 
 ## Skills
 
@@ -96,6 +97,9 @@ Default: use subagents only when they make work clearer, safer, or smaller.
 - client-workflow
 - session-recovery
 - ship-and-docs
+
+Load skills only for the current phase or recovery scenario.
+Do not preload.
 
 ## Source of Truth
 
@@ -112,6 +116,7 @@ Default: use subagents only when they make work clearer, safer, or smaller.
 A task is only complete when:
 
 - the relevant artifact exists
+- zero-tool-call completions are invalid
 - the relevant checks have been run or explicitly skipped with reason
 - `docs/STATUS.md` points to the active refs
 - blockers and residual risks are recorded

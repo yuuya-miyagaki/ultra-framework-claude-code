@@ -26,6 +26,9 @@ REQUIRED_AGENT_FILES = [
     ROOT / ".claude/agents/qa.md",
     ROOT / ".claude/agents/security.md",
     ROOT / ".claude/agents/ui.md",
+    ROOT / ".claude/agents/reviewer-testing.md",
+    ROOT / ".claude/agents/reviewer-performance.md",
+    ROOT / ".claude/agents/reviewer-maintainability.md",
 ]
 
 REQUIRED_SKILL_FILES = [
@@ -54,6 +57,14 @@ REQUIRED_TEMPLATE_FILES = [
     ROOT / "templates/LEARNINGS.template.md",
     ROOT / "templates/BRAINSTORM-RECORD.template.md",
     ROOT / "templates/VERIFICATION.template.md",
+    ROOT / "templates/hooks.template.json",
+]
+
+REQUIRED_HOOK_FILES = [
+    ROOT / "hooks/session-start.sh",
+    ROOT / "hooks/check-gate.sh",
+    ROOT / "hooks/check-destructive.sh",
+    ROOT / "hooks/check-tdd.sh",
 ]
 
 REQUIRED_EXAMPLE_FILES = [
@@ -92,9 +103,9 @@ REQUIRED_CLAUDE_HEADINGS = [
 # Overrides section in the template variant.
 MAX_CLAUDE_WORDS = 650
 
-# Template placeholder pattern: <記入>, <topic>, etc. Matches angle-bracket
-# tokens that look like fill-in markers (Japanese or short English words).
-PLACEHOLDER_PATTERN = re.compile(r"<[A-Za-z\u3000-\u9FFF]{1,20}>")
+# Template placeholder pattern: <記入>, <topic>, <docs/requirements/ のパス>, etc.
+# Matches angle-bracket tokens that look like fill-in markers.
+PLACEHOLDER_PATTERN = re.compile(r"<[A-Za-z\u3000-\u9FFF/\s\-\.,:\d_]{1,40}>")
 
 # Placeholders that are legitimate in example files (not fill-in markers).
 PLACEHOLDER_ALLOWLIST = {
@@ -114,7 +125,7 @@ def word_count(text: str) -> int:
 def main() -> int:
     failures: list[str] = []
 
-    for path in REQUIRED_FILES + REQUIRED_AGENT_FILES + REQUIRED_SKILL_FILES + REQUIRED_TEMPLATE_FILES + REQUIRED_EXAMPLE_FILES:
+    for path in REQUIRED_FILES + REQUIRED_AGENT_FILES + REQUIRED_SKILL_FILES + REQUIRED_TEMPLATE_FILES + REQUIRED_HOOK_FILES + REQUIRED_EXAMPLE_FILES:
         if not path.exists():
             failures.append(f"missing required file: {path.relative_to(ROOT)}")
 
@@ -159,6 +170,31 @@ def main() -> int:
                 failures.append(f"README.md is missing validation command: {token}")
         if "/Users/" in readme:
             failures.append("README.md contains machine-specific absolute paths")
+
+    # Agent structure validation: CSO description, rationalization tables,
+    # and hallucination guard boundaries.
+    CORE_AGENT_FILES = [
+        ROOT / ".claude/agents/planner.md",
+        ROOT / ".claude/agents/implementer.md",
+        ROOT / ".claude/agents/reviewer.md",
+        ROOT / ".claude/agents/qa.md",
+        ROOT / ".claude/agents/security.md",
+        ROOT / ".claude/agents/ui.md",
+    ]
+    for path in REQUIRED_AGENT_FILES:
+        if not path.exists():
+            continue
+        text = read_text(path)
+        rel = path.relative_to(ROOT)
+        # All agents must have CSO-format description.
+        if 'description: "Trigger:' not in text:
+            failures.append(f"{rel} missing CSO description (must start with 'Trigger:')")
+        # All agents must have hallucination guard boundary.
+        if "do not claim completion without" not in text:
+            failures.append(f"{rel} missing hallucination guard boundary")
+        # Core agents must have rationalization table.
+        if path in CORE_AGENT_FILES and "## Known Rationalizations" not in text:
+            failures.append(f"{rel} missing rationalization table (## Known Rationalizations)")
 
     # Check example project files for leftover template placeholders.
     for path in REQUIRED_EXAMPLE_FILES:

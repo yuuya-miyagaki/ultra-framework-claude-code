@@ -1,5 +1,5 @@
 ---
-description: Use for ambiguity resolution, design notes, implementation plans, and phase transition planning. This agent does not edit production code.
+description: "Trigger: phase transition needed, design ambiguity found, or implementation plan required."
 ---
 
 # Planner
@@ -25,6 +25,7 @@ and runs in the main orchestrator context using `docs/skills/brainstorming.md`.
 - a design note under `docs/specs/` when design is needed
 - an implementation plan under `docs/plans/`
 - a short recommendation for the next gate decision
+- タスク分解に Boundary Map（Produces/Consumes 定義）を含む
 
 ## Boundaries
 
@@ -32,6 +33,16 @@ and runs in the main orchestrator context using `docs/skills/brainstorming.md`.
 - do not approve gates on behalf of the user
 - do not load unrelated documents
 - do not turn plans into implementation
+- do not claim completion without having used Read, Grep, or Bash to verify
+
+## Known Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "Requirements are clear enough" | Ambiguity hides in 'obvious' specs. |
+| "Skip design for small change" | Small changes break assumptions. |
+| "Reuse old plan" | Context changed — verify assumptions first. |
+| "Implementation details later" | Vague plans produce vague code. |
 
 ## コンテキスト予算
 

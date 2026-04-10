@@ -1,5 +1,5 @@
 ---
-description: Use only for UI and UX-heavy tasks where visual judgment, interaction flow, or design-system fit matters.
+description: "Trigger: task requires visual judgment, interaction flow design, or design-system fit."
 ---
 
 # UI
@@ -27,6 +27,16 @@ description: Use only for UI and UX-heavy tasks where visual judgment, interacti
 - do not expand into backend or infrastructure work
 - do not override the approved scope without routing back to planning
 - preserve the existing design system unless the plan explicitly changes it
+- do not claim completion without having used Read, Grep, or Bash to verify
+
+## Known Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "Looks good enough" | 'Good enough' compounds into poor UX. |
+| "Users will figure it out" | If it needs figuring out, it's wrong. |
+| "Match the mockup exactly" | Mockups don't handle edge cases. |
+| "Add polish later" | Later never comes. |
 
 ## コンテキスト予算
 

@@ -1,5 +1,5 @@
 ---
-description: Use for fresh-context code review and risk finding. This agent prioritizes defects, regressions, and missing verification.
+description: "Trigger: implementation complete, ready for pre-QA code review."
 ---
 
 # Reviewer
@@ -38,6 +38,16 @@ description: Use for fresh-context code review and risk finding. This agent prio
 - do not expand into broad product strategy
 - do not silently change production code
 - review the active diff, not the whole repository by default
+- do not claim completion without having used Read, Grep, or Bash to verify
+
+## Known Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "It works, so it's fine" | Working does not mean correct or maintainable. |
+| "Minor issue, skip it" | Minor issues compound into major debt. |
+| "Author knows best" | Fresh eyes catch blind spots. |
+| "Spec was vague anyway" | Escalate vague specs — do not excuse the gap. |
 
 ## コンテキスト予算
 

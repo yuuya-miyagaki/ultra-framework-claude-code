@@ -4,13 +4,12 @@
 
 - Use this repository as a thin Claude Code operating model.
 - Claude is the orchestrator and should stay in control of routing.
-- Hard gates require explicit user approval before crossing them.
-- Completion claims must point to evidence, not chat confidence.
+- Hard gates require explicit user approval.
+- Completion claims require evidence, not chat confidence.
 - Load only the documents required for the current task.
 - Use framework phases, not `EnterPlanMode`.
 - Persist project lessons in `docs/LEARNINGS.md`, not auto-memory.
-- Stop after 3 consecutive failures on the same error. Do not retry with the
-  same approach — report the blocker to the user.
+- Stop after 3 consecutive failures on the same error and report the blocker.
 - Never run destructive commands (`push --force`, `reset --hard`, `rm -rf`,
   `DROP`, branch deletion) without explicit user approval.
 
@@ -76,6 +75,9 @@ Dev verification by task type:
 - Use `security` for security-focused review and residual risk notes.
 - Use `ui` only for UI or UX-heavy work.
 
+- Use `reviewer-testing`, `reviewer-performance`, `reviewer-maintainability`
+  as parallel review specialists when diff-scope warrants.
+
 Default: use subagents only when they make work clearer, safer, or smaller.
 
 ## Context Budget Policy
@@ -115,6 +117,7 @@ Do not preload.
 A task is only complete when:
 
 - the relevant artifact exists
+- zero-tool-call completions are invalid
 - the relevant checks have been run or explicitly skipped with reason
 - `docs/STATUS.md` points to the active refs
 - blockers and residual risks are recorded

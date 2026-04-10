@@ -32,6 +32,7 @@ ultra-framework-claude-code/
 ├── CLAUDE.md
 ├── .claude/agents/
 ├── docs/
+├── hooks/
 ├── templates/
 ├── scripts/
 └── examples/minimal-project/
@@ -43,6 +44,7 @@ ultra-framework-claude-code/
 - `docs/STATUS.md` is the operational state index
 - canonical docs under `docs/` are the source of project truth
 - `.claude/agents/` holds bounded specialist roles
+- `hooks/` provides runtime enforcement via Claude Code hooks
 - `templates/` is the project bootstrap source
 
 ## Quick Start
@@ -57,6 +59,14 @@ ultra-framework-claude-code/
 **Skills** (`docs/skills/`) are framework-level reference documents. They are
 not copied into each project — Claude reads them from the framework repository
 when needed. Project CLAUDE.md references skills by name, not by file path.
+
+**Hooks** (`hooks/`) enforce framework rules at runtime. Copy
+`templates/hooks.template.json` into your project's `.claude/settings.local.json`
+and copy the `hooks/` directory into the project root. The hooks provide:
+
+- **SessionStart**: injects current mode, phase, and blockers from STATUS.md
+- **PreToolUse (Edit/Write)**: blocks code edits when plan gate is not approved
+- **PreToolUse (Bash)**: warns before destructive commands
 
 ## Validation
 

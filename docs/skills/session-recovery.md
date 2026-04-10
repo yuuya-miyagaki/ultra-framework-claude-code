@@ -28,8 +28,8 @@
 |---|---|
 | onboard, discovery | なし（requirements が未作成なら読まない） |
 | requirements, scope, acceptance, handover | requirements |
-| brainstorm | requirements |
-| plan | requirements, spec |
+| brainstorm | requirements, docs/LEARNINGS.md |
+| plan | requirements, spec, docs/LEARNINGS.md |
 | implement | plan, spec |
 | review | plan, 変更 diff |
 | qa | plan, review |

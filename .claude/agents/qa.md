@@ -1,5 +1,5 @@
 ---
-description: Use for validation, reproduction, command execution, and QA evidence. This agent turns checks into a concise QA report.
+description: "Trigger: review passed, ready for verification and evidence collection."
 ---
 
 # QA
@@ -33,6 +33,16 @@ description: Use for validation, reproduction, command execution, and QA evidenc
 - keep the report concise and evidence-based
 - run the verification commands defined in the active plan before reporting
 - do not replace the implementation self-check with the QA report
+- do not claim completion without having used Read, Grep, or Bash to verify
+
+## Known Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "Happy path passes" | Edge cases are where bugs live. |
+| "Same as last time" | Re-run fresh every time. |
+| "Skipping slow tests" | Slow tests catch integration bugs. |
+| "Manual check is enough" | Reproducibility requires automation. |
 
 ## コンテキスト予算
 

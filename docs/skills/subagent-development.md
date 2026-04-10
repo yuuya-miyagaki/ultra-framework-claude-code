@@ -59,6 +59,25 @@ Stage 1（仕様準拠）→ Stage 2（コード品質）に従う。
 - 両 Stage PASS → タスク完了マーク → 次のタスクへ
 - いずれか FAIL → 実装サブエージェントが修正 → 再レビュー
 
+### Step 3.5: Review Army（specialist 並列レビュー）
+
+phase-level review（Step 4）の前に、変更の性質に応じて specialist reviewer を並列起動する。
+
+**起動判断（diff-scope 分析）:**
+
+| 変更の特徴 | 起動する specialist |
+|-----------|-------------------|
+| テストファイルの変更あり、またはテストなしの実装あり | reviewer-testing |
+| ループ/クエリ/API呼び出しの変更あり | reviewer-performance |
+| 3ファイル以上の変更、または新モジュール追加 | reviewer-maintainability |
+
+**ルール:**
+- 該当しない specialist は起動しない（コスト節約）
+- specialist は Task tool で並列起動する
+- 各 specialist の finding には confidence score（1-10）を付与する
+- confidence 7 未満の finding は注意書き付きで報告する
+- 全 specialist の結果を統合し、重複を排除してから phase-level review に進む
+
 ### Step 4: review フェーズの最終レビュー
 
 - 全タスク完了後、**phase-level review** を 1 回実施する

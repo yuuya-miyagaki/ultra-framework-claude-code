@@ -39,6 +39,17 @@
 - 採用理由: UI と運用フローを短期で固め、検索基盤は後から差し替える方がリスクが低い
 - 不採用理由: A はインフラ構築コストが高い、C はセキュリティポリシー違反
 
+## 構造マップ
+
+```mermaid
+graph TD
+    User[ユーザー] --> SF[SearchForm]
+    SF --> API[search API client]
+    API --> MI[mock index]
+    MI --> API
+    API --> RL[ResultList]
+```
+
 ## スコープ境界
 
 - やること: 検索フォーム、結果一覧、フィルター、出典スニペット

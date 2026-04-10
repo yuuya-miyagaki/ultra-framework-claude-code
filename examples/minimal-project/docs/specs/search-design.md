@@ -25,6 +25,16 @@
   - ResultList: 結果一覧・スニペット・フィルター表示
   - search API client: mock index 呼び出しとエラーハンドリング
 
+### アーキテクチャ図
+
+```mermaid
+graph TD
+    SF[SearchForm] -->|query, filter| API[search API client]
+    API -->|searchDocuments| MI[mock index]
+    MI -->|SearchResult 配列| API
+    API -->|SearchResult 配列| RL[ResultList]
+```
+
 ## インターフェース定義
 
 - ユニット間の契約:
@@ -38,6 +48,16 @@
 - 入力: 検索キーワードとドキュメント種別
 - 処理: UI から検索 API を呼び出し、mock index で関連文書を返す
 - 出力: タイトル、概要、出典スニペット付きの検索結果
+
+### フロー図
+
+```mermaid
+flowchart LR
+    Input[検索キーワード + 種別] --> Validate[入力整形]
+    Validate --> Query[mock index 検索]
+    Query --> Format[結果整形]
+    Format --> Output[タイトル + 概要 + スニペット]
+```
 
 ## 依存関係
 

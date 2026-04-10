@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# PreToolUse hook for Edit/Write: warns when editing production code without test changes.
+set -euo pipefail
+
+# Read stdin (JSON with tool_input).
+INPUT=$(cat)
+
+# Extract file_path from tool_input.
+TARGET_FILE=$(printf '%s' "$INPUT" | grep -o '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*:[[:space:]]*"//;s/"$//' || true)
+
+# Python fallback.
+if [ -z "$TARGET_FILE" ]; then
+  TARGET_FILE=$(printf '%s' "$INPUT" | python3 -c 'import sys,json; print(json.loads(sys.stdin.read()).get("tool_input",{}).get("file_path",""))' 2>/dev/null || true)
+fi
+
+# If we can't determine target, allow.
+if [ -z "$TARGET_FILE" ]; then
+  echo '{}'
+  exit 0
+fi
+
+# Skip non-production files: docs, templates, scripts, hooks, configs, framework control.
+case "$TARGET_FILE" in
+  */docs/*|*/templates/*|*/scripts/*|*/hooks/*|*/.claude/*|\
+  *CLAUDE.md|*STATUS.md|*LEARNINGS.md|*README.md|\
+  *.gitkeep|*.gitignore|*.json|*.yaml|*.yml|*.toml|*.ini|*.cfg|\
+  *.md|*.txt|*.lock)
+    echo '{}'
+    exit 0
+    ;;
+esac
+
+# Skip test files themselves (they ARE the tests being written).
+# Use boundary-aware patterns to avoid matching latest.ts, specification.ts, etc.
+case "$TARGET_FILE" in
+  */__tests__/*|__tests__/*|*/test/*|test/*|*/tests/*|tests/*|\
+  *.test.*|*.spec.*|*_test.*|*_spec.*)
+    echo '{}'
+    exit 0
+    ;;
+esac
+
+# At this point, the target looks like production code.
+# Check if there are test file changes in the current git diff (staged + unstaged).
+HAS_TEST_CHANGES=false
+
+if command -v git >/dev/null 2>&1; then
+  # Check both staged and unstaged changes for test files.
+  # Pattern matches actual code test files, not docs about testing.
+  TEST_PATTERN='\.(test|spec)\.[a-zA-Z]+$|_(test|spec)\.[a-zA-Z]+$|(^|/)__tests__/|(^|/)tests?/'
+  TEST_DIFF=$(git diff --name-only HEAD 2>/dev/null | grep -E "$TEST_PATTERN" || true)
+  TEST_STAGED=$(git diff --cached --name-only 2>/dev/null | grep -E "$TEST_PATTERN" || true)
+  TEST_UNTRACKED=$(git ls-files --others --exclude-standard 2>/dev/null | grep -E "$TEST_PATTERN" || true)
+
+  if [ -n "$TEST_DIFF" ] || [ -n "$TEST_STAGED" ] || [ -n "$TEST_UNTRACKED" ]; then
+    HAS_TEST_CHANGES=true
+  fi
+fi
+
+if [ "$HAS_TEST_CHANGES" = false ]; then
+  printf '{"permissionDecision":"ask","message":"[TDD] テストファイルの変更が検出されません。TDDルール: テストを先に書き、失敗を確認してから実装してください。"}\n'
+else
+  echo '{}'
+fi
+exit 0

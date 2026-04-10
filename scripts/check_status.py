@@ -272,6 +272,32 @@ def validate_status_file(path: Path) -> list[str]:
     for key in sorted(unknown_ref_keys):
         failures.append(f"{path} has unknown current_refs key: {key}")
 
+    # Validate ref value types: requirements must be list, others must be scalar-or-null.
+    req_value = refs.get("requirements")
+    if req_value is not None and not isinstance(req_value, list):
+        failures.append(f"{path} current_refs.requirements must be a list, got scalar: {req_value}")
+    for scalar_key in ["plan", "spec", "review", "qa", "security"]:
+        sv = refs.get(scalar_key)
+        if isinstance(sv, list):
+            failures.append(f"{path} current_refs.{scalar_key} must be scalar-or-null, got list")
+
+    # Validate that approved gates have corresponding non-null refs.
+    gate_ref_mapping = {
+        "plan": "plan",
+        "review": "review",
+        "qa": "qa",
+        "security": "security",
+    }
+    for gate_key, ref_key in gate_ref_mapping.items():
+        gate_value = approvals.get(gate_key)
+        ref_value = refs.get(ref_key)
+        if gate_value == "approved" and (
+            ref_value is None or ref_value == "null" or ref_value == []
+        ):
+            failures.append(
+                f"{path} gate '{gate_key}' is approved but current_refs.{ref_key} is empty"
+            )
+
     root = path.parent.parent
     for key in ["plan", "spec", "review", "qa", "security"]:
         value = refs.get(key)

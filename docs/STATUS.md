@@ -1,11 +1,11 @@
 ---
 framework: ultra-framework-claude-code
-framework_version: "0.1.0"
+framework_version: "0.2.0"
 project_name: "Ultra Framework Claude Code"
 mode: Dev
 phase: docs
 task_type: framework
-last_updated: "2026-04-10T01:00:00Z"
+last_updated: "2026-04-10T12:00:00Z"
 gate_approvals:
   client_ready_for_dev: n/a
   brainstorm: approved
@@ -21,7 +21,7 @@ current_refs:
   review: docs/qa-reports/bootstrap-review.md
   qa: docs/qa-reports/bootstrap-qa.md
   security: docs/qa-reports/bootstrap-security.md
-next_action: "Scenario review の残件を順に解消する。現在: ship/docs フェーズ定義の追加。"
+next_action: "Phase 1-3 完了。実プロジェクトでの検証、または次の改善サイクルの開始。"
 blockers: []
 session_history:
   - date: "2026-04-10"
@@ -35,31 +35,39 @@ session_history:
   - date: "2026-04-10"
     mode: Dev
     phase: "implement"
-    note: "Cross-framework improvements (8件), Codex review remediation (3 rounds), design-phase review 11件発見。F-01から対応予定。"
+    note: "Cross-framework improvements (8件), Codex review remediation (3 rounds), design-phase review F-01〜F-11 全件完了。"
+  - date: "2026-04-10"
+    mode: Dev
+    phase: "docs"
+    note: "Phase 1-3 実装完了（11施策）。4並列レビュー+Codex レビューで計14件修正。Visual Brainstorm追加。"
 ---
 
 ## Summary
 
-This repository now contains the first Claude Code native distribution of Ultra
-Framework.
+Claude Code ネイティブの Ultra Framework 運用フレームワーク。Phase 1-3 の改善を
+経て、ルールの自動強制（Hooks）、学習の構造化（Learnings）、レビューの専門化
+（Review Army）、計画の境界定義（Boundary Map）が実装済み。
 
-The initial V0 includes:
+主要な構成:
 
-- the thin `CLAUDE.md` control kernel
-- the explicit `docs/STATUS.md` operational schema
-- a bounded `.claude/agents/` set
-- canonical templates and a minimal example project
-- lightweight validators and bootstrap evidence notes
+- 薄い `CLAUDE.md` 制御カーネル（649語）
+- 明示的な `docs/STATUS.md` 運用スキーマ
+- 9つのサブエージェント（コア6 + レビュー specialist 3）
+- 4つのランタイムフック（SessionStart, Gate, TDD, Destructive）
+- 6つのプルベーススキル
+- 16のドキュメントテンプレート + バリデータ2本
 
 ## Recent Decisions
 
-- Keep `ultra-framework-v7` unchanged and build this distribution separately.
-- Optimize for Claude Code first, not cross-host compatibility.
-- Keep the specialist set small to reduce token and routing overhead.
-- Treat V0 validation as structural and add richer checks only when a real need appears.
+- Phase 1: CSO, Rationalization Tables, Hallucination Guard, Hooks 基盤を導入。
+- Phase 2: Boundary Map, Learnings 構造化, Review Army を実装。
+- Phase 3: Phase-Aware Session Context, TDD Guard, Agent Validation を追加。
+- P2-04: Visual Brainstorm（Mermaid/Draw.io 連携）を追加。
+- 語数上限は機能効果が大きい場合に柔軟対応（ユーザー承認済み）。
 
 ## Session History
 
-- 2026-04-10: Design approved for a separate Claude Code distribution.
-- 2026-04-10: Repository skeleton, templates, example project, and validators completed.
-- 2026-04-10: Cross-framework improvements, Codex review fixes, design-phase review実施。未対応: F-01〜F-11（F-08済）。
+- 2026-04-10: 設計承認。Claude Code 専用ディストリビューションとして独立構築。
+- 2026-04-10: リポジトリスケルトン、テンプレート、サンプル、バリデータ完成。
+- 2026-04-10: クロスフレームワーク改善、Codex レビュー修正、設計レビュー F-01〜F-11 全件完了。
+- 2026-04-10: Phase 1-3 全11施策実装。4並列レビュー+Codex レビューで計14件修正。

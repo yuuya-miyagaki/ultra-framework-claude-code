@@ -1,4 +1,5 @@
 # Dev から Client への完了報告
+<!-- 正本: ship-and-docs skill -->
 
 <!-- exit-check: TO-CLIENT 完成・証拠参照済み・既知ギャップ記載済み → docs へ -->
 

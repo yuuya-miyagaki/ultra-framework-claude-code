@@ -25,6 +25,14 @@
 - テスト: `tests/components/ResultList.test.tsx` — 一覧表示・フィルター
 - テスト: `tests/api/search.test.ts` — API 呼び出し・エラーハンドリング
 
+## Boundary Map
+
+| タスク | Produces（生成物） | Consumes（依存物） |
+|--------|-------------------|-------------------|
+| Task 1 | SearchForm コンポーネント + onChange/onSearch イベント | なし |
+| Task 2 | searchDocuments 関数 (search API client) | なし |
+| Task 3 | ResultList コンポーネント + フィルターロジック | Task 1 (SearchForm), Task 2 (searchDocuments) |
+
 ## タスク分解
 
 > 各タスクは **2-5 分** の単位。「and」が入るなら分割する。
