@@ -27,6 +27,10 @@ current_refs:
   review: null
   qa: null
   security: null
+token_budget:
+  model: opus
+  estimated_tasks: 0
+  notes: ""
 next_action: ""
 blockers: []
 session_history:

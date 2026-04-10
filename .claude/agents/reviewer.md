@@ -18,8 +18,18 @@ description: Use for fresh-context code review and risk finding. This agent prio
 
 ## Produce
 
-- a review note under `docs/qa-reports/`
-- prioritized findings
+- **Stage 1 — Spec compliance review** (diff against the approved plan):
+  - all plan requirements are implemented
+  - no extra features beyond scope
+  - no missing implementations
+  - conclusion: PASS / FAIL with reasons
+- **Stage 2 — Code quality review** (only when Stage 1 is PASS):
+  - naming consistency and clarity
+  - code structure and modularity
+  - test quality (real code, edge cases, naming)
+  - error handling adequacy
+  - conclusion: PASS / FAIL with reasons
+- review note under `docs/qa-reports/`
 - residual risk notes when no findings are found
 
 ## Boundaries

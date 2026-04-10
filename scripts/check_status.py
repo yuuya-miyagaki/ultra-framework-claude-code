@@ -27,6 +27,12 @@ REQUIRED_TOP_LEVEL_KEYS = [
     "session_history",
 ]
 
+# Optional top-level keys that are valid but not required. Used by
+# validate_status_file to suppress unknown-key warnings for known extensions.
+OPTIONAL_TOP_LEVEL_KEYS = {
+    "token_budget",
+}
+
 REQUIRED_APPROVAL_KEYS = [
     "client_ready_for_dev",
     "brainstorm",
@@ -206,6 +212,15 @@ def validate_status_file(path: Path) -> list[str]:
     for key in REQUIRED_TOP_LEVEL_KEYS:
         if not has_top_level_key(frontmatter, key):
             failures.append(f"{path} is missing frontmatter key: {key}")
+
+    # Warn about unknown top-level keys (comments excluded).
+    allowed_keys = set(REQUIRED_TOP_LEVEL_KEYS) | OPTIONAL_TOP_LEVEL_KEYS
+    for line in frontmatter.splitlines():
+        key_match = re.match(r"^([A-Za-z_][A-Za-z0-9_]*):\s*", line)
+        if key_match:
+            found_key = key_match.group(1)
+            if found_key not in allowed_keys:
+                failures.append(f"{path} has unknown frontmatter key: {found_key}")
 
     mode = extract_scalar_value(frontmatter, "mode")
     phase = extract_scalar_value(frontmatter, "phase")

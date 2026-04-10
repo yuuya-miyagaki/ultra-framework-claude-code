@@ -6,10 +6,13 @@ description: Use for ambiguity resolution, design notes, implementation plans, a
 
 ## Use When
 
-- the request is ambiguous
-- architecture or scope tradeoffs need design work
-- the task is entering `brainstorm` or `plan`
+- the request is ambiguous and requires design work
+- architecture or scope tradeoffs need a design note
+- the task is entering `plan` and an implementation plan is needed
 - a gate recommendation needs explicit reasoning
+
+Do not use for `brainstorm`. Brainstorming requires interactive user dialogue
+and runs in the main orchestrator context using `docs/skills/brainstorming.md`.
 
 ## Read First
 

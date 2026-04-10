@@ -28,3 +28,8 @@ description: Use for bounded implementation work. This agent reads only the acti
 - do not act as the reviewer
 - do not read broad project docs without need
 - keep changes aligned to the active refs
+- prefer working in a git worktree for non-trivial changes to isolate risk
+- write failing tests BEFORE production code (RED-GREEN-REFACTOR)
+- never commit production code without corresponding tests
+- if code was written before tests, delete and restart with TDD
+- refer to `docs/skills/test-driven-development.md` when in doubt

@@ -7,6 +7,10 @@
 - Hard gates require explicit user approval before crossing them.
 - Completion claims must point to evidence, not chat confidence.
 - Load only the documents required for the current task.
+- Stop after 3 consecutive failures on the same error. Do not retry with the
+  same approach — report the blocker to the user.
+- Never run destructive commands (`push --force`, `reset --hard`, `rm -rf`,
+  `DROP`, branch deletion) without explicit user approval.
 
 ## Session Start
 
@@ -37,6 +41,7 @@ Phase progression is controlled by gate approvals in `docs/STATUS.md`:
 
 - Do not enter `plan` before `brainstorm` approval.
 - Do not enter `implement` before `plan` approval.
+- Do not write production code before a failing test exists.
 - Do not enter `qa` before `review` approval.
 - Do not enter `security` before `qa` approval.
 - Do not claim completion before the required evidence exists.
@@ -46,7 +51,8 @@ already controlled by `plan` approval.
 
 ## Routing
 
-- Use `planner` for ambiguity, design, and implementation planning.
+- Run `brainstorm` in the main context (requires user dialogue).
+- Use `planner` for design notes and implementation plans.
 - Use `implementer` for code and test changes.
 - Use `reviewer` for fresh-context review and findings.
 - Use `qa` for validation, reproduction, and QA reports.
@@ -65,6 +71,16 @@ work clearer, safer, or smaller.
 - Summarize at phase transitions, not after every micro-step.
 - Keep `docs/STATUS.md` short and current rather than replaying prior sessions.
 
+## Skills
+
+- `docs/skills/brainstorming.md`
+- `docs/skills/test-driven-development.md`
+- `docs/skills/subagent-development.md`
+- `docs/skills/session-recovery.md`
+
+Load a skill only when entering the relevant phase or recovery scenario.
+Do not preload.
+
 ## Source of Truth
 
 - Operating rules: `CLAUDE.md`
@@ -72,6 +88,7 @@ work clearer, safer, or smaller.
 - Requirements: `docs/requirements/*`
 - Design and planning artifacts: `docs/specs/*`, `docs/plans/*`
 - Review, QA, and security evidence: `docs/qa-reports/*`
+- Skills and process guides: `docs/skills/*`
 - Actual behavior: code, tests, and command output
 
 ## Completion Rule
@@ -86,11 +103,5 @@ A task is only complete when:
 
 ## Project Overrides
 
-Use this section in real projects to add only project-specific rules such as:
-
-- stack-specific commands
-- naming conventions
-- deployment constraints
-- paths that require special care
-
-Do not duplicate the control-kernel sections above.
+Add project-specific rules here (stack commands, naming, deployment, paths).
+Do not duplicate the sections above.

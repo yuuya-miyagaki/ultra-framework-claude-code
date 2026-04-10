@@ -19,6 +19,10 @@ description: Use for security-focused review and residual-risk analysis. This ag
 ## Produce
 
 - a security review note under `docs/qa-reports/`
+- OWASP Top 10 relevance check against the change (skip categories clearly
+  unrelated to the diff)
+- STRIDE threat assessment when the change touches trust boundaries, data
+  flows, or external inputs
 - concrete findings or an explicit residual-risk statement
 - recommended mitigations when risk remains
 

@@ -21,6 +21,8 @@ description: Use for validation, reproduction, command execution, and QA evidenc
 - a QA report under `docs/qa-reports/`
 - executed check list with pass, fail, or skipped state
 - blocker and reproduction notes
+- verification command results (test, lint, build) from the active plan
+- TDD verification using `templates/VERIFICATION.template.md` structure
 
 ## Boundaries
 
@@ -28,3 +30,4 @@ description: Use for validation, reproduction, command execution, and QA evidenc
 - do not widen scope beyond the active change
 - do not hide skipped checks
 - keep the report concise and evidence-based
+- run the verification commands defined in the active plan before reporting
