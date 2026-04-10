@@ -22,7 +22,9 @@
 
 1. 計画ファイルを読み、タスク一覧を把握する
 2. 各タスクの依存関係を確認する
-3. TaskCreate で全タスクを登録する
+3. 全タスクをタスクリストとして整理する（Claude Code の TaskCreate を使用。
+   TaskCreate が利用できない環境では `docs/plans/` 内の計画ファイルと
+   `docs/STATUS.md` の `next_action` でタスク進捗を管理する）
 
 ### Step 1: 実装サブエージェントの起動
 
