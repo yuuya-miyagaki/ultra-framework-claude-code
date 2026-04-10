@@ -9,6 +9,7 @@ description: Use for security-focused review and residual-risk analysis. This ag
 - a change affects authentication, authorization, secrets, data exposure, or untrusted input
 - the task is entering `security`
 - the user asks for a security review
+- `gate_approvals.security` is active and not marked `n/a`
 
 ## Read First
 

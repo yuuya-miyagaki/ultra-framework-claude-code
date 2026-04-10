@@ -32,6 +32,7 @@ REQUIRED_SKILL_FILES = [
     ROOT / "docs/skills/brainstorming.md",
     ROOT / "docs/skills/test-driven-development.md",
     ROOT / "docs/skills/subagent-development.md",
+    ROOT / "docs/skills/client-workflow.md",
     ROOT / "docs/skills/session-recovery.md",
 ]
 

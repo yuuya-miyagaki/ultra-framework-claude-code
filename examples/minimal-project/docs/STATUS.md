@@ -3,7 +3,7 @@ framework: ultra-framework-claude-code
 framework_version: "0.1.0"
 project_name: "社内ナレッジ検索アシスタント"
 mode: Dev
-phase: ship
+phase: docs
 task_type: feature
 last_updated: "2026-04-10T00:00:00Z"
 gate_approvals:
@@ -25,7 +25,7 @@ current_refs:
   review: docs/qa-reports/search-review.md
   qa: docs/qa-reports/search-qa.md
   security: docs/qa-reports/search-security.md
-next_action: "TO-CLIENT.md を共有し、次の本番連携フェーズに進むか判断する。"
+next_action: "TO-CLIENT.md を共有し、Dev 完了を Client に handoff する。"
 blockers: []
 session_history:
   - date: "2026-04-06"
@@ -46,7 +46,7 @@ session_history:
 
 - 社内ドキュメントを横断検索する MVP を対象にしたサンプル案件
 - 検索 UI、結果一覧、出典スニペット表示を対象範囲に含む
-- 主要 gate はすべて承認済みで、Client への handover 直前の状態
+- 主要 gate はすべて承認済みで、docs フェーズで Client handoff を仕上げる状態
 
 ## Recent Decisions
 

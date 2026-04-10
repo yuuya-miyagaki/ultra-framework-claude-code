@@ -7,6 +7,8 @@
 - Hard gates require explicit user approval before crossing them.
 - Completion claims must point to evidence, not chat confidence.
 - Load only the documents required for the current task.
+- Use framework phases, not `EnterPlanMode`.
+- Persist project lessons in `docs/LEARNINGS.md`, not auto-memory.
 - Stop after 3 consecutive failures on the same error. Do not retry with the
   same approach — report the blocker to the user.
 - Never run destructive commands (`push --force`, `reset --hard`, `rm -rf`,
@@ -23,21 +25,31 @@
 
 ## State Machine
 
-This framework uses a two-layer model:
-
 - Modes: `Client`, `Dev`
 - Client phases: `onboard -> discovery -> requirements -> scope -> acceptance -> handover`
-- Dev phases: `onboard -> brainstorm -> plan -> implement -> review -> qa -> security -> ship -> docs`
+- Dev phases: `brainstorm -> plan -> implement -> review -> qa -> security -> ship -> docs`
 
-Mode transitions are controlled by mode-transition gates:
+Mode gates:
 
 - `client_ready_for_dev`: required before entering `Dev`
 - `dev_ready_for_client`: required before handing back to `Client`
 
-Client mode does not use per-phase gates. Client work is controlled by
-artifact readiness and the `client_ready_for_dev` gate only.
+In `Client`, load `docs/skills/client-workflow.md`.
+Only `client_ready_for_dev` moves work to `Dev`.
 
-Phase progression is controlled by gate approvals in `docs/STATUS.md`:
+Before `brainstorm`, reread `docs/STATUS.md`, confirm refs, and restate
+objective, blockers, and next action. Required; not a phase.
+
+`ship` writes `docs/handover/TO-CLIENT.md`; `docs` updates
+`docs/LEARNINGS.md` and requests `dev_ready_for_client`.
+
+Phase transition protocol:
+
+- get approval for the current artifact or summary
+- update `gate_approvals` and `current_refs`
+- update `phase` and `next_action`, then invoke the next route
+
+Phase gates:
 
 - Do not enter `plan` before `brainstorm` approval.
 - Do not enter `implement` before `plan` approval.
@@ -46,8 +58,13 @@ Phase progression is controlled by gate approvals in `docs/STATUS.md`:
 - Do not enter `security` before `qa` approval.
 - Do not claim completion before the required evidence exists.
 
-There is no separate `implement` approval key. Entry into `implement` is
-already controlled by `plan` approval.
+No separate `implement` approval key; `plan` approval controls entry.
+
+Dev verification by task type:
+
+- `feature`, `refactor`, `framework`: require `review`, `qa`, `security`.
+- `bugfix`: require `review`; `qa` or `security` may be `n/a` with reason.
+- `hotfix`: prefer `review`; `qa` or `security` may be deferred with reason.
 
 ## Routing
 
@@ -59,8 +76,7 @@ already controlled by `plan` approval.
 - Use `security` for security-focused review and residual risk notes.
 - Use `ui` only for UI or UX-heavy work.
 
-Default rule: do not invoke subagents by habit. Invoke them when they make the
-work clearer, safer, or smaller.
+Default: use subagents only when they make work clearer, safer, or smaller.
 
 ## Context Budget Policy
 
@@ -70,15 +86,17 @@ work clearer, safer, or smaller.
 - Avoid opening more than three detailed docs at once unless blocked.
 - Summarize at phase transitions, not after every micro-step.
 - Keep `docs/STATUS.md` short and current rather than replaying prior sessions.
+- Update `docs/STATUS.md` before long pauses or likely context compression.
 
 ## Skills
 
 - `docs/skills/brainstorming.md`
 - `docs/skills/test-driven-development.md`
 - `docs/skills/subagent-development.md`
+- `docs/skills/client-workflow.md`
 - `docs/skills/session-recovery.md`
 
-Load a skill only when entering the relevant phase or recovery scenario.
+Load skills only for the relevant phase or recovery scenario.
 Do not preload.
 
 ## Source of Truth
@@ -88,7 +106,7 @@ Do not preload.
 - Requirements: `docs/requirements/*`
 - Design and planning artifacts: `docs/specs/*`, `docs/plans/*`
 - Review, QA, and security evidence: `docs/qa-reports/*`
-- Skills and process guides: `docs/skills/*`
+- Skills: `docs/skills/*`
 - Actual behavior: code, tests, and command output
 
 ## Completion Rule

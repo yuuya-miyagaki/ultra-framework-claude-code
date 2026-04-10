@@ -17,20 +17,12 @@ gate_approvals:
   security: pending
   dev_ready_for_client: pending
 current_refs:
-  requirements:
-    - docs/requirements/PRD.md
-    - docs/requirements/SCOPE.md
-    - docs/requirements/NFR.md
-    - docs/requirements/ACCEPTANCE.md
+  requirements: []
   plan: null
   spec: null
   review: null
   qa: null
   security: null
-token_budget:
-  model: opus
-  estimated_tasks: 0
-  notes: ""
 next_action: ""
 blockers: []
 session_history:

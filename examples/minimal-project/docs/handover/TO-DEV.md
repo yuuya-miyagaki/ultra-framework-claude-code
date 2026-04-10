@@ -1,5 +1,8 @@
 # Client から Dev への引き渡し
 
+<!-- exit-check: 正本参照済み・優先順位/リスク/未解決事項記載・ユーザー承認済み → client_ready_for_dev ゲート申請 -->
+<!-- 正本: client-workflow skill (framework repo) -->
+
 ## プロジェクト概要
 
 - プロジェクト名: 社内ナレッジ検索アシスタント

@@ -26,13 +26,16 @@
 
 | フェーズ | 読むべき refs |
 |---|---|
-| onboard〜handover (Client) | requirements |
+| onboard, discovery | なし（requirements が未作成なら読まない） |
+| requirements, scope, acceptance, handover | requirements |
 | brainstorm | requirements |
 | plan | requirements, spec |
 | implement | plan, spec |
 | review | plan, 変更 diff |
 | qa | plan, review |
 | security | plan, qa |
+| ship | plan, review, qa, security, `docs/handover/TO-CLIENT.md` |
+| docs | `docs/handover/TO-CLIENT.md`, `docs/LEARNINGS.md` |
 
 **全 refs を読まない。** 現在のフェーズに必要なものだけ。
 
@@ -45,7 +48,14 @@ git log --oneline -5
 
 未コミットの変更、進行中のブランチ、ワークツリーを確認する。
 
-### Step 4: 復帰サマリの報告
+### Step 4: partial artifact の判定
+
+- `current_refs` にないファイルは、存在していても正本として扱わない
+- `current_refs` にあるファイルでも、placeholder、未記入セクション、途中書きの
+  findings、未承認の evidence があれば partial とみなす
+- partial を見つけたら gate を進めず、修正するかユーザーに確認する
+
+### Step 5: 復帰サマリの報告
 
 ユーザーに以下を報告する:
 
@@ -65,6 +75,7 @@ git log --oneline -5
 - STATUS.md の `next_action` を最優先で確認する
 - 復帰時に新しいドキュメントを作成しない
 - 不明な状態があればユーザーに質問する（推測しない）
+- partial artifact を completion evidence として扱わない
 - 復帰完了後、`session_history` に復帰エントリを追加する
 
 ## コンテキスト予算

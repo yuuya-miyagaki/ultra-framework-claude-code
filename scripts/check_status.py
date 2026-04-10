@@ -27,11 +27,7 @@ REQUIRED_TOP_LEVEL_KEYS = [
     "session_history",
 ]
 
-# Optional top-level keys that are valid but not required. Used by
-# validate_status_file to suppress unknown-key warnings for known extensions.
-OPTIONAL_TOP_LEVEL_KEYS = {
-    "token_budget",
-}
+OPTIONAL_TOP_LEVEL_KEYS: set[str] = set()
 
 REQUIRED_APPROVAL_KEYS = [
     "client_ready_for_dev",
@@ -63,7 +59,7 @@ ALLOWED_PHASES = {
 }
 MODE_PHASES = {
     "Client": {"onboard", "discovery", "requirements", "scope", "acceptance", "handover"},
-    "Dev": {"onboard", "brainstorm", "plan", "implement", "review", "qa", "security", "ship", "docs"},
+    "Dev": {"brainstorm", "plan", "implement", "review", "qa", "security", "ship", "docs"},
 }
 EXPECTED_CURRENT_REF_KEYS = {"requirements", "plan", "spec", "review", "qa", "security"}
 MAX_SESSION_HISTORY_ENTRIES = 5

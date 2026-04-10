@@ -3,7 +3,7 @@ framework: ultra-framework-claude-code
 framework_version: "0.1.0"
 project_name: "Ultra Framework Claude Code"
 mode: Dev
-phase: ship
+phase: docs
 task_type: framework
 last_updated: "2026-04-10T01:00:00Z"
 gate_approvals:
@@ -21,7 +21,7 @@ current_refs:
   review: docs/qa-reports/bootstrap-review.md
   qa: docs/qa-reports/bootstrap-qa.md
   security: docs/qa-reports/bootstrap-security.md
-next_action: "Use the scaffold on the first real project and collect adoption learnings."
+next_action: "Scenario review の残件を順に解消する。現在: ship/docs フェーズ定義の追加。"
 blockers: []
 session_history:
   - date: "2026-04-10"
@@ -32,6 +32,10 @@ session_history:
     mode: Dev
     phase: "ship"
     note: "Bootstrapped the repository, validated the contract, and recorded review, QA, and security evidence."
+  - date: "2026-04-10"
+    mode: Dev
+    phase: "implement"
+    note: "Cross-framework improvements (8件), Codex review remediation (3 rounds), design-phase review 11件発見。F-01から対応予定。"
 ---
 
 ## Summary
@@ -58,3 +62,4 @@ The initial V0 includes:
 
 - 2026-04-10: Design approved for a separate Claude Code distribution.
 - 2026-04-10: Repository skeleton, templates, example project, and validators completed.
+- 2026-04-10: Cross-framework improvements, Codex review fixes, design-phase review実施。未対応: F-01〜F-11（F-08済）。

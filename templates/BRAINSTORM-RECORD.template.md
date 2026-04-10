@@ -47,3 +47,8 @@
 ## 未解決事項
 
 - なし / あれば記入
+
+## 次のステップ
+
+- [ ] 設計ノートを作成する → `docs/specs/YYYY-MM-DD-<topic>-design.md`
+- テンプレート名: `SPEC.template.md`

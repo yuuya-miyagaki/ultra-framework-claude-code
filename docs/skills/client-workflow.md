@@ -1,0 +1,65 @@
+# Client フェーズ進行ルール
+
+> Client モードのフェーズ進行を統制する正本。各フェーズの産出物・完了条件・
+> 遷移ルールを定義する。
+
+## いつ使うか
+
+- `mode = Client` でセッションを開始するとき
+- Client フェーズを次に進めようとするとき
+- Client → Dev のモード遷移を判断するとき
+
+## フェーズ進行表
+
+| # | フェーズ | 産出物 | 完了条件 | 遷移ルール |
+|---|---------|--------|----------|-----------|
+| 1 | **onboard** | なし（口頭 or チャット合意） | プロジェクトの目的・背景・主要ステークホルダーをユーザーと確認済み | 合意が得られたら `discovery` へ |
+| 2 | **discovery** | なし（調査メモは任意） | 課題・ユーザー・既存システムの調査が完了し、要件定義に着手できる状態 | 調査結果をユーザーに共有し承認されたら `requirements` へ |
+| 3 | **requirements** | `docs/requirements/PRD.md` | PRD の全セクションが埋まり、機能要件が列挙され、ユーザーが内容を承認 | PRD 承認後 `scope` へ |
+| 4 | **scope** | `docs/requirements/SCOPE.md`, `docs/requirements/NFR.md` | スコープ境界が明確で、NFR が定義され、ユーザーが承認 | SCOPE + NFR 承認後 `acceptance` へ |
+| 5 | **acceptance** | `docs/requirements/ACCEPTANCE.md` | 受入条件が機能要件・非機能要件と紐付き、判定基準が明確で、ユーザーが承認 | ACCEPTANCE 承認後 `handover` へ |
+| 6 | **handover** | `docs/handover/TO-DEV.md` | 引き渡し文書が正本ドキュメントを参照し、優先順位・リスク・未解決事項が記載され、ユーザーが承認 | HANDOVER 承認後、`client_ready_for_dev` ゲートを申請 |
+
+## 運用ルール
+
+### フェーズ飛ばしの禁止
+
+- 上記の順序を飛ばしてはならない。
+- ただし `onboard` と `discovery` は小規模タスクでは統合可能。その場合
+  STATUS.md の `phase` は `discovery` に設定し、`session_history` に
+  `onboard+discovery を統合` と記録する。
+
+### 承認の取り方
+
+- 各フェーズの完了条件を満たしたら、ユーザーに明示的に承認を求める。
+- artifact があるフェーズでは、「次に進んでよいですか？」ではなく、産出物の内容を提示したうえで確認する。
+- artifact がないフェーズ（`onboard`, `discovery`）では、会話で合意した内容を短く要約して確認する。
+- ユーザーが承認したら `docs/STATUS.md` の `phase` を更新する。
+
+### artifact がないフェーズの扱い
+
+- `onboard` と `discovery` にはテンプレートがない。
+- これらのフェーズでは、チャット上の合意が完了条件となる。
+- 必要に応じて調査メモを `docs/requirements/` に残してよいが、必須ではない。
+- この間は `current_refs.requirements` を空のまま維持してよい。
+
+### current_refs の更新
+
+- `requirements` で `docs/requirements/PRD.md` を作成したら、`current_refs.requirements` に追加する。
+- `scope` で `docs/requirements/SCOPE.md` と `docs/requirements/NFR.md` を作成したら追加する。
+- `acceptance` で `docs/requirements/ACCEPTANCE.md` を作成したら追加する。
+- `handover` では requirements refs を維持し、`next_action` を handover 完了に合わせて更新する。
+
+### モード遷移ゲート
+
+- `handover` フェーズの承認後、`client_ready_for_dev` ゲートをユーザーに申請する。
+- ゲートが承認されるまで Dev モードに入ってはならない。
+- ゲート承認後、STATUS.md の `mode` を `Dev`、`phase` を `brainstorm` に切り替える。
+- Dev へ入る時点では `current_refs.requirements` を維持し、`plan` / `spec` / `review` / `qa` / `security` は未作成なら `null` のままにする。
+- `next_action` は「Dev handoff check を行い、brainstorm を開始する」に更新する。
+
+## コンテキスト予算
+
+- Client モードに入ったら本ドキュメントを 1 回読む。
+- その後はフェーズに応じた artifact template だけを開く。
+- 本ドキュメントを常時保持する必要はない（進行表を把握すれば十分）。

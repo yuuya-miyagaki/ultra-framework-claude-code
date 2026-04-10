@@ -1,5 +1,10 @@
 # 設計ノート
 
+## 入力
+
+- ブレインストーミング記録: <docs/specs/ または docs/plans/ のパス / なし>
+- 要件: <docs/requirements/ のパス>
+
 ## 問題整理
 
 - 背景: <記入>
@@ -49,3 +54,9 @@
 - 結合: <記入>
 - エッジケース: <記入>
 - 手動確認: <記入>
+
+## 次のステップ
+
+- [ ] 実装計画を作成する → `docs/plans/YYYY-MM-DD-<topic>-implementation-plan.md`
+- テンプレート名: `PLAN.template.md`
+- 本設計ノートのパスを PLAN の「参照設計」に記載すること
