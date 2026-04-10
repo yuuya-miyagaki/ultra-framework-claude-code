@@ -18,6 +18,7 @@
 | `refactor` | **必須** | 影響範囲の事前合意が必要 |
 | `bugfix` | skip 可 (`n/a`) | 原因特定と修正に集中する |
 | `hotfix` | skip 可 (`n/a`) | 緊急対応を優先する |
+| `framework` | **必須** | フレームワーク変更は影響範囲が広い |
 
 skip する場合は `gate_approvals.brainstorm` を `n/a` に設定する。
 

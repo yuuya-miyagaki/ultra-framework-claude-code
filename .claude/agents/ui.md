@@ -27,3 +27,8 @@ description: Use only for UI and UX-heavy tasks where visual judgment, interacti
 - do not expand into backend or infrastructure work
 - do not override the approved scope without routing back to planning
 - preserve the existing design system unless the plan explicitly changes it
+
+## コンテキスト予算
+
+- デザイン仕様 + 対象コンポーネントのみを開く
+- バックエンドコードは読まない

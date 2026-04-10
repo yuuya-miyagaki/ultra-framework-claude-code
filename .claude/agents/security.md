@@ -33,3 +33,8 @@ description: Use for security-focused review and residual-risk analysis. This ag
 - do not act as a general reviewer
 - do not claim security is complete without evidence
 - avoid generic checklist output that is not tied to the change
+
+## コンテキスト予算
+
+- 計画 + 変更 diff + セキュリティ関連ファイルのみを開く
+- QA レポートは必要時のみ参照する

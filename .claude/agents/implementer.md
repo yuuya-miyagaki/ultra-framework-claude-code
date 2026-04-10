@@ -33,3 +33,8 @@ description: Use for bounded implementation work. This agent reads only the acti
 - never commit production code without corresponding tests
 - if code was written before tests, delete and restart with TDD
 - refer to `docs/skills/test-driven-development.md` when in doubt
+
+## コンテキスト予算
+
+- 担当タスクの計画セクション + 対象ファイルのみを開く
+- 計画全文や他タスクの情報は読まない

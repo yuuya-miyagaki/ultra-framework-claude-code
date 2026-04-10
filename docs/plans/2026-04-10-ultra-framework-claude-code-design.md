@@ -120,7 +120,7 @@ This framework uses a two-layer model:
 
 - Modes: `Client`, `Dev`
 - Client phases: `onboard -> discovery -> requirements -> scope -> acceptance -> handover`
-- Dev phases: `onboard -> brainstorm -> plan -> implement -> review -> qa -> security -> ship -> docs`
+- Dev phases: `brainstorm -> plan -> implement -> review -> qa -> security -> ship -> docs`
 
 Mode transitions are controlled by gate approvals:
 

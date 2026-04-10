@@ -13,7 +13,7 @@ gate_approvals:
   review: approved
   qa: approved
   security: approved
-  dev_ready_for_client: approved
+  dev_ready_for_client: pending
 current_refs:
   requirements:
     - docs/requirements/PRD.md
@@ -40,6 +40,14 @@ session_history:
     mode: "Dev"
     phase: "review"
     note: "レビュー、QA、セキュリティ確認を完了した。"
+  - date: "2026-04-10"
+    mode: "Dev"
+    phase: "ship"
+    note: "TO-CLIENT を作成し、ユーザーに共有した。"
+  - date: "2026-04-10"
+    mode: "Dev"
+    phase: "docs"
+    note: "LEARNINGS を更新し、dev_ready_for_client ゲートを申請中。"
 ---
 
 ## Summary
@@ -59,3 +67,4 @@ session_history:
 - 2026-04-06: Client artifacts と TO-DEV を確定
 - 2026-04-08: design と implementation plan を承認して実装
 - 2026-04-09: review, QA, security を完了
+- 2026-04-10: ship (TO-CLIENT 作成) → docs (LEARNINGS 更新、ゲート申請中)

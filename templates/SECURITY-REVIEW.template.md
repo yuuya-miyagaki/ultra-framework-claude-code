@@ -1,4 +1,5 @@
 # セキュリティレビュー
+<!-- 正本: security agent -->
 
 ## 対象
 
@@ -49,3 +50,9 @@
 ## 残留リスク
 
 - <記入>
+
+## 総合判定
+
+- 判定: approved / blocked
+- 次のアクション: <記入>
+<!-- exit-check: OWASP/STRIDE 確認・総合判定記入済み → ship へ -->

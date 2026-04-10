@@ -1,4 +1,5 @@
 # ブレインストーミング記録
+<!-- 正本: brainstorming skill -->
 
 ## 日付
 
@@ -52,3 +53,4 @@
 
 - [ ] 設計ノートを作成する → `docs/specs/YYYY-MM-DD-<topic>-design.md`
 - テンプレート名: `SPEC.template.md`
+<!-- exit-check: アプローチ決定・スコープ明確 → design note へ -->

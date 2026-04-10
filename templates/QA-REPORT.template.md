@@ -1,4 +1,5 @@
 # QA レポート
+<!-- 正本: qa agent -->
 
 > QA agent が実行した確認と証拠を要約する。VERIFICATION は自己検証用であり、
 > 本レポートとは別物。
@@ -28,3 +29,4 @@
 ## Blockers
 
 - なし / あれば記入
+<!-- exit-check: 全チェック実施・結果記入済み → security へ -->

@@ -34,6 +34,7 @@ REQUIRED_SKILL_FILES = [
     ROOT / "docs/skills/subagent-development.md",
     ROOT / "docs/skills/client-workflow.md",
     ROOT / "docs/skills/session-recovery.md",
+    ROOT / "docs/skills/ship-and-docs.md",
 ]
 
 REQUIRED_TEMPLATE_FILES = [
@@ -59,12 +60,20 @@ REQUIRED_EXAMPLE_FILES = [
     ROOT / "examples/minimal-project/CLAUDE.md",
     ROOT / "examples/minimal-project/README.md",
     ROOT / "examples/minimal-project/docs/STATUS.md",
+    ROOT / "examples/minimal-project/docs/LEARNINGS.md",
     ROOT / "examples/minimal-project/docs/requirements/PRD.md",
     ROOT / "examples/minimal-project/docs/requirements/SCOPE.md",
     ROOT / "examples/minimal-project/docs/requirements/NFR.md",
     ROOT / "examples/minimal-project/docs/requirements/ACCEPTANCE.md",
     ROOT / "examples/minimal-project/docs/handover/TO-DEV.md",
     ROOT / "examples/minimal-project/docs/handover/TO-CLIENT.md",
+    ROOT / "examples/minimal-project/docs/specs/search-brainstorm-record.md",
+    ROOT / "examples/minimal-project/docs/specs/search-design.md",
+    ROOT / "examples/minimal-project/docs/plans/search-implementation-plan.md",
+    ROOT / "examples/minimal-project/docs/qa-reports/search-review.md",
+    ROOT / "examples/minimal-project/docs/qa-reports/search-qa.md",
+    ROOT / "examples/minimal-project/docs/qa-reports/search-security.md",
+    ROOT / "examples/minimal-project/docs/qa-reports/search-verification.md",
 ]
 
 REQUIRED_CLAUDE_HEADINGS = [

@@ -1,4 +1,5 @@
 # レビュー記録
+<!-- 正本: reviewer agent -->
 
 ## 対象
 
@@ -43,3 +44,4 @@ Stage 1 PASS の場合のみ実施する。
 
 - 判定: approved / blocked
 - 次のアクション: <記入>
+<!-- exit-check: Stage 1/2 判定・findings 対応済み → qa へ -->

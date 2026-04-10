@@ -1,4 +1,5 @@
 # 設計ノート
+<!-- 正本: brainstorming skill -->
 
 ## 入力
 
@@ -60,3 +61,4 @@
 - [ ] 実装計画を作成する → `docs/plans/YYYY-MM-DD-<topic>-implementation-plan.md`
 - テンプレート名: `PLAN.template.md`
 - 本設計ノートのパスを PLAN の「参照設計」に記載すること
+<!-- exit-check: 全セクション記入・自己レビュー完了 → plan へ -->

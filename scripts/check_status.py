@@ -62,6 +62,16 @@ MODE_PHASES = {
     "Dev": {"brainstorm", "plan", "implement", "review", "qa", "security", "ship", "docs"},
 }
 EXPECTED_CURRENT_REF_KEYS = {"requirements", "plan", "spec", "review", "qa", "security"}
+ALLOWED_TASK_TYPES = {"feature", "refactor", "bugfix", "hotfix", "framework"}
+PHASE_REQUIRES_GATES = {
+    "plan": ["brainstorm"],
+    "implement": ["brainstorm", "plan"],
+    "review": ["brainstorm", "plan"],
+    "qa": ["brainstorm", "plan", "review"],
+    "security": ["brainstorm", "plan", "review", "qa"],
+    "ship": ["brainstorm", "plan", "review", "qa", "security"],
+    "docs": ["brainstorm", "plan", "review", "qa", "security"],
+}
 MAX_SESSION_HISTORY_ENTRIES = 5
 REQUIRED_BODY_HEADINGS = [
     "## Summary",
@@ -227,6 +237,10 @@ def validate_status_file(path: Path) -> list[str]:
     if mode in MODE_PHASES and phase not in MODE_PHASES[mode]:
         failures.append(f"{path} has invalid phase for mode {mode}: {phase}")
 
+    task_type = extract_scalar_value(frontmatter, "task_type")
+    if task_type and task_type not in ALLOWED_TASK_TYPES:
+        failures.append(f"{path} has invalid task_type: {task_type}")
+
     approvals = extract_approval_map(frontmatter)
     for key in REQUIRED_APPROVAL_KEYS:
         if key not in approvals:
@@ -236,6 +250,14 @@ def validate_status_file(path: Path) -> list[str]:
             failures.append(
                 f"{path} has invalid approval value for {key}: {approvals[key]}"
             )
+
+    if phase and phase in PHASE_REQUIRES_GATES:
+        for required_gate in PHASE_REQUIRES_GATES[phase]:
+            gate_value = approvals.get(required_gate)
+            if gate_value in {"pending", "blocked"}:
+                failures.append(
+                    f"{path} is in phase '{phase}' but gate '{required_gate}' is '{gate_value}'"
+                )
 
     for heading in REQUIRED_BODY_HEADINGS:
         if heading not in text:

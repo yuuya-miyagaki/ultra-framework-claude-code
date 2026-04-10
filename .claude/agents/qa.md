@@ -33,3 +33,8 @@ description: Use for validation, reproduction, command execution, and QA evidenc
 - keep the report concise and evidence-based
 - run the verification commands defined in the active plan before reporting
 - do not replace the implementation self-check with the QA report
+
+## コンテキスト予算
+
+- 計画 + テスト結果 + 対象ファイルのみを開く
+- レビュー記録は必要時のみ参照する

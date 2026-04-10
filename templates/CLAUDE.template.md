@@ -90,13 +90,12 @@ Default: use subagents only when they make work clearer, safer, or smaller.
 
 ## Skills
 
-Load skills by name:
-
 - brainstorming
 - test-driven-development
 - subagent-development
 - client-workflow
 - session-recovery
+- ship-and-docs
 
 ## Source of Truth
 

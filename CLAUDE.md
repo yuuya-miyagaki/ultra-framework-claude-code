@@ -90,11 +90,12 @@ Default: use subagents only when they make work clearer, safer, or smaller.
 
 ## Skills
 
-- `docs/skills/brainstorming.md`
-- `docs/skills/test-driven-development.md`
-- `docs/skills/subagent-development.md`
-- `docs/skills/client-workflow.md`
-- `docs/skills/session-recovery.md`
+- brainstorming
+- test-driven-development
+- subagent-development
+- client-workflow
+- session-recovery
+- ship-and-docs
 
 Load skills only for the relevant phase or recovery scenario.
 Do not preload.

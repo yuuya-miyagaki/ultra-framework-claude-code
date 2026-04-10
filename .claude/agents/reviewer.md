@@ -38,3 +38,8 @@ description: Use for fresh-context code review and risk finding. This agent prio
 - do not expand into broad product strategy
 - do not silently change production code
 - review the active diff, not the whole repository by default
+
+## コンテキスト予算
+
+- 計画 + 変更 diff + 対象ファイルのみを開く
+- セッション履歴は参照しない

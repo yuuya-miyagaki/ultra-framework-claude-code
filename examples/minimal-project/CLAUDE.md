@@ -97,6 +97,7 @@ Load skills by name:
 - subagent-development
 - client-workflow
 - session-recovery
+- ship-and-docs
 
 ## Source of Truth
 

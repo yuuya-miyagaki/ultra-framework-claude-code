@@ -32,3 +32,8 @@ and runs in the main orchestrator context using `docs/skills/brainstorming.md`.
 - do not approve gates on behalf of the user
 - do not load unrelated documents
 - do not turn plans into implementation
+
+## コンテキスト予算
+
+- requirements + spec + STATUS.md のみを開く
+- 実装コードは読まない

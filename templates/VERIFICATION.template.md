@@ -1,4 +1,5 @@
 # 検証チェックリスト
+<!-- 正本: test-driven-development skill -->
 
 > implementer / orchestrator が QA 前に行う自己検証。QA レポートの代替ではない。
 
@@ -39,3 +40,4 @@
 - テスト結果: <貼り付けまたはファイルパス>
 - レビュー結果: <docs/qa-reports/ のパス>
 - セキュリティレビュー: <docs/qa-reports/ のパス / n/a>
+<!-- exit-check: 全チェック完了・エビデンスパス記入済み → review 提出 -->
