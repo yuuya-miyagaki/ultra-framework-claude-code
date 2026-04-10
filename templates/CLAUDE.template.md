@@ -73,13 +73,13 @@ work clearer, safer, or smaller.
 
 ## Skills
 
-- `docs/skills/brainstorming.md`
-- `docs/skills/test-driven-development.md`
-- `docs/skills/subagent-development.md`
-- `docs/skills/session-recovery.md`
+Skills are conceptual references, not file paths. They are maintained in the
+framework repository and not copied into each project. Load by name when needed:
 
-Load a skill only when entering the relevant phase or recovery scenario.
-Do not preload.
+- brainstorming: design phase (brainstorm)
+- test-driven-development: implementation phase (implement)
+- subagent-development: multi-task implementation
+- session-recovery: context loss or session restart
 
 ## Source of Truth
 
@@ -88,7 +88,7 @@ Do not preload.
 - Requirements: `docs/requirements/*`
 - Design and planning artifacts: `docs/specs/*`, `docs/plans/*`
 - Review, QA, and security evidence: `docs/qa-reports/*`
-- Skills and process guides: `docs/skills/*`
+- Skills and process guides: referenced by name (see Skills section above)
 - Actual behavior: code, tests, and command output
 
 ## Completion Rule

@@ -48,10 +48,15 @@ ultra-framework-claude-code/
 ## Quick Start
 
 1. Read [CLAUDE.md](CLAUDE.md)
-2. Copy the files you need from `templates/` into a project repo
-3. Copy `.claude/agents/` into the project if you want the default specialist set
-4. Initialize `docs/STATUS.md`
-5. Validate the scaffold before use
+2. Copy `templates/CLAUDE.template.md` as your project's `CLAUDE.md`
+3. Copy the templates you need from `templates/` into your project's `docs/`
+4. Copy `.claude/agents/` into the project if you want the default specialist set
+5. Initialize `docs/STATUS.md` from `templates/STATUS.template.md`
+6. Validate the scaffold before use
+
+**Skills** (`docs/skills/`) are framework-level reference documents. They are
+not copied into each project — Claude reads them from the framework repository
+when needed. Project CLAUDE.md references skills by name, not by file path.
 
 ## Validation
 

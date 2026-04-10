@@ -126,6 +126,13 @@ def main() -> int:
             )
         if path.name in {"CLAUDE.template.md", "CLAUDE.md"} and path != ROOT / "CLAUDE.md" and "## Project Overrides" not in text:
             failures.append(f"{path.relative_to(ROOT)} is missing heading: ## Project Overrides")
+        # Project CLAUDE.md variants must not reference docs/skills/ file paths
+        # directly. Skills are conceptual references in project contexts.
+        if path != ROOT / "CLAUDE.md" and "docs/skills/" in text:
+            failures.append(
+                f"{path.relative_to(ROOT)} contains docs/skills/ file path reference"
+                " (project CLAUDE.md should use skill names, not paths)"
+            )
 
     for path in [ROOT / "docs/STATUS.md", ROOT / "examples/minimal-project/docs/STATUS.md"]:
         if path.exists():
