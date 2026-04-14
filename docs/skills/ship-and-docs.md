@@ -56,7 +56,7 @@ TO-CLIENT の内容をユーザーに提示し、承認を得る。
 
 ### Step 4: LEARNINGS 更新
 
-`docs/LEARNINGS.md` に以下を追記する:
+`docs/LEARNINGS.md` に以下を追記し、昇格ルールに基づいて既存エントリを評価する:
 
 - このタスクで得た技術的知見
 - うまくいったパターン・避けるべきパターン
@@ -87,6 +87,21 @@ TO-CLIENT の内容をユーザーに提示し、承認を得る。
 - `gate_approvals.dev_ready_for_client` を `approved` に更新
 - `mode` を `Client` に切り替える（次の Client フェーズに戻る場合）
 - または、タスクが完全に完了していればその旨を記録する
+
+## LEARNINGS 昇格ルール
+
+docs フェーズで LEARNINGS を記録した後:
+
+1. confidence ≥ 8 のエントリを抽出
+2. 2プロジェクト以上で同様の問題が発生しているか確認
+3. 該当する場合、フレームワークファイル（スキル、エージェント、CLAUDE.md）への昇格を提案
+4. 1プロジェクトのみでも confidence ≥ 9 なら即時昇格を検討
+
+昇格先の判断:
+
+- 開発プロセスの問題 → CLAUDE.md or スキル
+- コードパターンの問題 → エージェント（reviewer, security 等）
+- デプロイの問題 → deploy スキル
 
 ## Red Flags（禁止事項）
 

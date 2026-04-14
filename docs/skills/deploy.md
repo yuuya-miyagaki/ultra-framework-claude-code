@@ -82,15 +82,44 @@ PLAN の Deploy Target セクションを再読し、以下を確認する:
 - モニタリング / アラート設定の確認
 - デプロイ完了を STATUS.md に記録する
 
-## 3回失敗ルール
+## トラブルシューティング
 
-デプロイ試行は「本番デプロイ成功」というゴールに対してカウントする。
-手法を変えてもカウントはリセットしない。3回失敗時:
+### 共通パターン
 
-1. 現状のサマリーを STATUS.md に記録
-2. 試行した手法と結果の一覧を提示
-3. 代替案（別アプローチ or 手動対応 or スキップ）を提案
-4. ユーザーに判断を委ねる
+| 症状 | 原因候補 | 対処 |
+|------|---------|------|
+| デプロイ成功だが機能しない | 環境変数未設定 | プラットフォームの環境変数管理で設定、再デプロイ |
+| 認証コールバック失敗 | OAuth App の URL 設定不備 | Homepage URL + Callback URL の両方を確認 |
+| ビルド成功だがランタイムエラー | ローカルと本番の環境差異 | .env.local はプラットフォームで読まれない場合あり |
+
+### Vercel 固有
+
+| 症状 | 原因 | 対処 |
+|------|------|------|
+| `vercel deploy --prod` が "Unexpected error" | CLI の AbortController race condition (v51+) | `vercel redeploy <deployment-id>` で回避 |
+| 環境変数が undefined | `.env.local` はランタイムで読まれない | `vercel env add` でプロジェクトレベル設定 + redeploy |
+| middleware 非推奨警告 | Next.js 16 の仕様変更 | 機能影響なし。Auth.js の proxy 対応待ち |
+
+### 外部サービス設定の網羅性ルール
+
+外部サービス（OAuth App, Stripe, Slack 等）の設定変更を案内する場合:
+
+- 関連する全フィールドを一括で案内すること
+- 部分的な案内（例: Callback URL のみ）は二度手間を生む
+- 設定項目のチェックリストを作成してから案内する
+
+## Deploy と Failure Rule の関係
+
+deploy フェーズのゴール単位:
+
+- deploy-prep → staging → uat → production → post-deploy は別ゴール
+- 同一サブステップ内の再試行が3回失敗 → second-opinion 発動
+- サブステップ間の移動はカウントをリセット
+
+例:
+- production デプロイが3回失敗 → second-opinion（ゴール = "production デプロイ成功"）
+- staging 成功 → production 失敗1回 → staging に戻って修正 → production 再挑戦
+  → これは production の2回目（staging の修正はカウント外）
 
 ## Completion
 

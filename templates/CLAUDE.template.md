@@ -9,7 +9,9 @@
 - Load only the documents required for the current task.
 - Use framework phases, not `EnterPlanMode`.
 - Persist project lessons in `docs/LEARNINGS.md`, not auto-memory.
-- Stop after 3 failures toward the same goal and report the blocker.
+- Stop after 3 failures toward the same goal and:
+  write `docs/second-opinion.md` (template), update STATUS.md blockers,
+  recommend IDE chat, then wait.
   Count by goal, not method — changing approach does not reset the count.
   TDD red-to-green cycles are excluded. Each test case is a separate goal.
 - Never run destructive commands (`push --force`, `reset --hard`, `rm -rf`,

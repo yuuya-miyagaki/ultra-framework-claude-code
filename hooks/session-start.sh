@@ -60,6 +60,12 @@ if [ -n "$GATES" ]; then
   CONTEXT="${CONTEXT} | gates:${GATES}"
 fi
 
+# Second-opinion file detection (PaC: enforced by check_framework_contract.py).
+SECOND_OPINION_FILE="${ROOT}/docs/second-opinion.md"
+if [ -f "$SECOND_OPINION_FILE" ]; then
+  CONTEXT="${CONTEXT} | [BLOCKER] docs/second-opinion.md exists — read before proceeding"
+fi
+
 # Phase-aware skill and rule hints.
 HINT=""
 case "$PHASE" in

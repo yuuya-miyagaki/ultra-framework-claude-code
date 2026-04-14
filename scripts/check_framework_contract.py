@@ -60,6 +60,7 @@ REQUIRED_TEMPLATE_FILES = [
     ROOT / "templates/BRAINSTORM-RECORD.template.md",
     ROOT / "templates/VERIFICATION.template.md",
     ROOT / "templates/DEPLOY-CHECKLIST.template.md",
+    ROOT / "templates/SECOND-OPINION.template.md",
     ROOT / "templates/hooks.template.json",
 ]
 
@@ -160,6 +161,40 @@ def main() -> int:
                 " (project CLAUDE.md should use skill names, not paths)"
             )
 
+    # Failure rule sync check: the block starting with "Stop after 3 failures"
+    # must be identical across all CLAUDE.md variants.
+    claude_paths = [
+        ROOT / "CLAUDE.md",
+        ROOT / "templates/CLAUDE.template.md",
+        ROOT / "examples/minimal-project/CLAUDE.md",
+    ]
+    failure_rules: dict[str, str] = {}
+    for path in claude_paths:
+        if not path.exists():
+            continue
+        text = read_text(path)
+        lines = text.split("\n")
+        start = None
+        end = None
+        for i, line in enumerate(lines):
+            if "Stop after 3 failures" in line:
+                start = i
+            elif start is not None and i > start and line.startswith("- "):
+                end = i
+                break
+        if start is not None:
+            block = "\n".join(lines[start : end if end else len(lines)])
+            failure_rules[str(path.relative_to(ROOT))] = block
+        else:
+            failures.append(
+                f"{path.relative_to(ROOT)} missing failure rule ('Stop after 3 failures')"
+            )
+    if len(set(failure_rules.values())) > 1:
+        failures.append(
+            "failure rule is out of sync across CLAUDE.md variants: "
+            + ", ".join(failure_rules.keys())
+        )
+
     for path in [ROOT / "docs/STATUS.md", ROOT / "examples/minimal-project/docs/STATUS.md"]:
         if path.exists():
             failures.extend(validate_status_file(path))
@@ -243,6 +278,16 @@ def main() -> int:
                         f"hooks.template.json is missing '{required_cmd}' "
                         f"registration under {event}"
                     )
+
+    # Session-start hook must detect docs/second-opinion.md (PaC for failure rule).
+    session_start_path = ROOT / "hooks/session-start.sh"
+    if session_start_path.exists():
+        session_start_text = read_text(session_start_path)
+        if "second-opinion" not in session_start_text:
+            failures.append(
+                "hooks/session-start.sh missing second-opinion.md detection"
+                " (required for failure rule PaC)"
+            )
 
     # Agent structure validation: CSO description, rationalization tables,
     # hallucination guard boundaries, and technical constraints.

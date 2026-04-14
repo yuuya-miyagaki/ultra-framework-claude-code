@@ -62,6 +62,15 @@ readOnly: true
 | "Low probability" | Low probability times high impact equals high risk. |
 | "Will fix later" | Security debt is the most expensive debt. |
 
+## Known Patterns
+
+### Token Exposure via Session
+
+Auth libraries (Auth.js, NextAuth) の session コールバックで外部 API トークンを
+session オブジェクトに含めると、`/api/auth/session` 経由でブラウザに露出する。
+→ サーバーサイド専用のトークン取得関数を分離する。
+→ レビューで検出すべき Critical パターン。
+
 ## コンテキスト予算
 
 - 計画 + 変更 diff + セキュリティ関連ファイルのみを開く
