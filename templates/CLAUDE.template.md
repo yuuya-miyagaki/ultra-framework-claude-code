@@ -2,28 +2,23 @@
 
 ## Operating Contract
 
-- Use this project with a thin Claude Code operating model.
-- Claude is the orchestrator and should stay in control of routing.
+- Thin Claude Code operating model. Claude orchestrates routing.
 - Hard gates require explicit user approval.
-- Completion claims require evidence, not chat confidence.
-- Load only the documents required for the current task.
+- Completion requires evidence, not chat confidence.
+- Load only docs required for the current task.
 - Use framework phases, not `EnterPlanMode`.
-- Persist project lessons in `docs/LEARNINGS.md`, not auto-memory.
-- Stop after 3 failures toward the same goal and:
-  write `docs/second-opinion.md` (template), update STATUS.md blockers,
-  recommend IDE chat, then wait.
-  Count by goal, not method — changing approach does not reset the count.
-  TDD red-to-green cycles are excluded. Each test case is a separate goal.
-- Never run destructive commands (`push --force`, `reset --hard`, `rm -rf`,
-  `DROP`, branch deletion) without explicit user approval.
-- Enforce rules via hooks and validators (Policy as Code).
+- Persist lessons in `docs/LEARNINGS.md`, not auto-memory.
+- Stop after 3 failures toward the same goal: write `docs/second-opinion.md`,
+  update STATUS.md blockers, recommend IDE chat, then wait.
+  Count by goal, not method. TDD red-to-green cycles excluded.
+- Destructive commands require explicit user approval. Enforce via hooks (PaC).
 
 ## Session Start
 
 1. Read `docs/STATUS.md`.
-2. Read only the `current_refs` relevant to the task.
+2. Read only `current_refs` relevant to the task.
 3. Pull extra docs only when a dependency appears.
-4. Invoke a subagent only when isolation reduces risk or context.
+4. Invoke subagents only when isolation reduces risk or context.
 5. Update `docs/STATUS.md` when phase, refs, blockers, or next step change.
 
 ## State Machine
@@ -43,15 +38,13 @@ Only `client_ready_for_dev` moves work to `Dev`.
 Before `brainstorm`, reread `docs/STATUS.md`, confirm refs, and restate
 objective, blockers, and next action. Required; not a phase.
 
-`deploy` runs `deploy` skill checklist (deploy-prep, staging, uat, production,
-post-deploy). `ship` writes `docs/handover/TO-CLIENT.md`; `docs` updates
-`docs/LEARNINGS.md` and requests `dev_ready_for_client`.
+`deploy`/`ship`/`docs` details live in their respective skills.
 
-Phase transition protocol:
+Iteration: after `dev_ready_for_client`, new task resets to `brainstorm`,
+clears dev gates to `pending`, sets non-requirements refs to null,
+increments `iteration`, keeps `current_refs.requirements`.
 
-- get approval for the current artifact or summary
-- update `gate_approvals` and `current_refs`
-- update `phase` and `next_action`, then invoke the next route
+Phase transition: get approval → update gates/refs → update phase/next_action → invoke next route.
 
 Phase gates:
 
@@ -60,46 +53,35 @@ Phase gates:
 - Do not write production code before a failing test exists.
 - Do not claim completion before the required evidence exists.
 
-Dev gates by task type:
-
-- feature/refactor/framework: review + qa + security + deploy.
-- bugfix: review only; rest n/a with reason.
-- hotfix: review preferred; rest deferred with reason.
-
-Task size (set in STATUS.md):
-
-- S (1 file): implement → review → ship
-- M (2-5 files): skip deploy
-- L (6+): all Dev phases
+| type | required gates | S (1 file) | M (2-5) | L (6+) |
+|------|---------------|------------|---------|--------|
+| feature/refactor/framework | review+qa+security+deploy | impl→review→ship | skip deploy | all |
+| bugfix | review; brainstorm+plan=n/a (bug-diagnosis) | same | same | same |
+| hotfix | review preferred; brainstorm+plan=n/a (bug-diagnosis simplified) | same | same | same |
 
 ## Routing
 
-- Run `brainstorm` in the main context (requires user dialogue).
-- Use `planner` for design notes and implementation plans.
-- Use `implementer` for code and test changes.
-- Use `reviewer` for fresh-context review and findings.
-- Use `qa` for validation, reproduction, and QA reports.
-- Use `security` for security review and residual risk notes.
-- Use `ui` only for UI or UX-heavy work.
+- `brainstorm`: main context (requires user dialogue).
+- `planner`: design notes and plans.
+- `implementer`: code and test changes.
+- `reviewer`: fresh-context review. `qa`: validation and QA reports.
+- `security`: security review. `ui`: UI/UX-heavy work only.
 
-- Use `reviewer-testing`, `reviewer-performance`, `reviewer-maintainability`
-  as parallel review specialists when diff-scope warrants.
-
-Default: use subagents only when they make work clearer, safer, or smaller.
+- Use `reviewer-testing`/`reviewer-performance`/`reviewer-maintainability` as
+  parallel specialists when diff-scope warrants.
+- Default: subagents only when they make work clearer, safer, or smaller.
 
 ## Context Budget Policy
 
-Context layers: L0 `CLAUDE.md` + `docs/STATUS.md` (always-on), L1 phase refs,
-L2 task files, L3 history and external (on-demand).
+L0 `CLAUDE.md`+`STATUS.md` (always-on), L1 phase refs, L2 task files, L3 on-demand.
 
-- Prefer repo files over chat history.
-- Pull-based reads; max three docs at once.
-- Summarize at phase transitions only.
-- Update `docs/STATUS.md` before pauses or context compression.
+- Prefer repo files over chat history. Pull-based; max three docs at once.
+- Summarize at phase transitions. Update `docs/STATUS.md` before pauses.
 
 ## Skills
 
 - brainstorming
+- bug-diagnosis
 - test-driven-development
 - subagent-development
 - deploy

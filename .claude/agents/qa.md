@@ -27,6 +27,17 @@ readOnly: true
 - verification command results (test, lint, build) from the active plan
 - references to the implementation self-check when a `VERIFICATION` artifact exists
 
+## ブラウザ QA（ui_surface: true の場合）
+
+`STATUS.md` の `ui_surface: true` のとき、以下を追加で実施する:
+
+- ページ表示確認（Playwright MCP snapshot）
+- コンソールエラー確認（browser_console_messages）
+- ネットワーク 4xx/5xx 確認（browser_network_requests）
+- 主要操作の動作確認
+
+注: screenshot 取得はオーケストレーターが担当（readOnly 制約）。
+
 ## Boundaries
 
 - do not redesign the feature

@@ -27,7 +27,7 @@ REQUIRED_TOP_LEVEL_KEYS = [
     "session_history",
 ]
 
-OPTIONAL_TOP_LEVEL_KEYS: set[str] = {"task_size"}
+OPTIONAL_TOP_LEVEL_KEYS: set[str] = {"task_size", "iteration", "ui_surface", "external_evidence"}
 
 REQUIRED_APPROVAL_KEYS = [
     "client_ready_for_dev",
@@ -225,6 +225,64 @@ def extract_session_history(frontmatter: str) -> list[dict[str, str]]:
     return entries
 
 
+REQUIRED_EVIDENCE_FIELDS = ["type", "scope", "findings", "resolution"]
+
+
+def extract_external_evidence(frontmatter: str) -> list[dict[str, str]]:
+    """Extract external_evidence entries from frontmatter.
+
+    Expected format (list of maps, field order independent):
+        external_evidence:
+          - type: "codex-review-round-1"
+            scope: "v0.5.0 Phase 1-7"
+            findings: "..."
+            resolution: "..."
+
+    Inline empty list (``external_evidence: []``) is valid and yields [].
+    """
+    entries: list[dict[str, str]] = []
+    current: dict[str, str] | None = None
+    in_block = False
+
+    for raw_line in frontmatter.splitlines():
+        line = raw_line.rstrip()
+        if not in_block:
+            # Match both "external_evidence:" (block) and
+            # "external_evidence: []" (inline empty).
+            header = re.match(r"^external_evidence:\s*(.*)$", line)
+            if header:
+                inline = header.group(1).strip()
+                if inline == "[]" or inline == "":
+                    in_block = inline == ""
+                    # inline [] → return empty list immediately
+                    if not in_block:
+                        return []
+            continue
+
+        if not line.strip():
+            continue
+        if re.match(r"^\S", line):
+            break
+
+        # Entry start: "  - <key>: <value>" — field-order independent.
+        entry_start = re.match(r"^\s{2}-\s*([A-Za-z0-9_]+):\s*(.+)$", line)
+        if entry_start:
+            if current:
+                entries.append(current)
+            current = {entry_start.group(1): entry_start.group(2).strip().strip('"')}
+            continue
+
+        # Subsequent fields: "    <key>: <value>"
+        entry_field = re.match(r"^\s{4}([A-Za-z0-9_]+):\s*(.+)$", line)
+        if entry_field and current is not None:
+            current[entry_field.group(1)] = entry_field.group(2).strip().strip('"')
+
+    if current:
+        entries.append(current)
+
+    return entries
+
+
 def validate_status_file(path: Path) -> list[str]:
     failures: list[str] = []
 
@@ -262,6 +320,16 @@ def validate_status_file(path: Path) -> list[str]:
     task_type = extract_scalar_value(frontmatter, "task_type")
     if task_type and task_type not in ALLOWED_TASK_TYPES:
         failures.append(f"{path} has invalid task_type: {task_type}")
+
+    iteration = extract_scalar_value(frontmatter, "iteration")
+    if iteration is not None:
+        if not iteration.isdigit() or int(iteration) < 1:
+            failures.append(f"{path} has invalid iteration (must be positive integer): {iteration}")
+
+    ui_surface = extract_scalar_value(frontmatter, "ui_surface")
+    if ui_surface is not None:
+        if ui_surface not in {"true", "false"}:
+            failures.append(f"{path} has invalid ui_surface (must be true/false): {ui_surface}")
 
     task_size = extract_scalar_value(frontmatter, "task_size")
     if task_size is not None:
@@ -336,7 +404,7 @@ def validate_status_file(path: Path) -> list[str]:
         if isinstance(sv, list):
             failures.append(f"{path} current_refs.{scalar_key} must be scalar-or-null, got list")
 
-    # Validate that approved gates have corresponding non-null refs.
+    # Validate gate ↔ ref consistency.
     gate_ref_mapping = {
         "plan": "plan",
         "review": "review",
@@ -347,11 +415,19 @@ def validate_status_file(path: Path) -> list[str]:
     for gate_key, ref_key in gate_ref_mapping.items():
         gate_value = approvals.get(gate_key)
         ref_value = refs.get(ref_key)
-        if gate_value == "approved" and (
-            ref_value is None or ref_value == "null" or ref_value == []
-        ):
+        ref_is_empty = ref_value is None or ref_value == "null" or ref_value == []
+        ref_is_present = not ref_is_empty
+        # Approved gate must have a ref.
+        if gate_value == "approved" and ref_is_empty:
             failures.append(
                 f"{path} gate '{gate_key}' is approved but current_refs.{ref_key} is empty"
+            )
+        # Pending or n/a gate must NOT have a ref (prevents stale refs across
+        # iterations and skip-phase scenarios like bugfix/hotfix).
+        if gate_value in {"pending", "n/a"} and ref_is_present:
+            failures.append(
+                f"{path} gate '{gate_key}' is '{gate_value}' but current_refs.{ref_key} "
+                f"still has a value (stale ref: {ref_value})"
             )
 
     root = path.parent.parent
@@ -391,6 +467,20 @@ def validate_status_file(path: Path) -> list[str]:
         if entry_mode in MODE_PHASES and entry_phase not in MODE_PHASES[entry_mode]:
             failures.append(
                 f"{path} session_history entry {index} has invalid phase for mode {entry_mode}: {entry_phase}"
+            )
+
+    # Validate external_evidence schema (optional field).
+    evidence_entries = extract_external_evidence(frontmatter)
+    allowed_evidence_fields = set(REQUIRED_EVIDENCE_FIELDS)
+    for index, entry in enumerate(evidence_entries, start=1):
+        for field in REQUIRED_EVIDENCE_FIELDS:
+            if field not in entry or not entry[field]:
+                failures.append(
+                    f"{path} external_evidence entry {index} is missing required field: {field}"
+                )
+        for field in sorted(set(entry.keys()) - allowed_evidence_fields):
+            failures.append(
+                f"{path} external_evidence entry {index} has unknown field: {field}"
             )
 
     return failures

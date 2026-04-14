@@ -6,6 +6,8 @@ mode: Client
 phase: onboard
 task_type: feature
 task_size: M
+iteration: 1
+ui_surface: false
 last_updated: ""
 # gate name = phase whose output is approved; mode-transition gates unlock
 # movement between Client and Dev
@@ -26,6 +28,7 @@ current_refs:
   qa: null
   security: null
   deploy: null
+external_evidence: []
 next_action: ""
 blockers: []
 session_history:

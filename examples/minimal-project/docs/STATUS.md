@@ -6,6 +6,8 @@ mode: Dev
 phase: docs
 task_type: feature
 task_size: M
+iteration: 1
+ui_surface: true
 last_updated: "2026-04-10T00:00:00Z"
 gate_approvals:
   client_ready_for_dev: approved

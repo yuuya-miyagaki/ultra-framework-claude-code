@@ -70,6 +70,17 @@ git log --oneline -5
 
 ユーザーの確認を待ってから作業を再開する。
 
+### イテレーション復帰（iteration > 1 の場合）
+
+- `docs/LEARNINGS.md` の前回イテレーションで記録された教訓を確認する
+- 前回の残留リスク・blockers が解消されているか確認する
+
+### 外部レビュー証拠（external_evidence がある場合）
+
+- `external_evidence` のエントリを確認し、未解決の findings がないか確認する
+- current_refs が正式な phase artifacts を持たない場合、external_evidence が
+  品質保証の代替根拠となる
+
 ## ルール
 
 - STATUS.md の `next_action` を最優先で確認する

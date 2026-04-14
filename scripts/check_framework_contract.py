@@ -34,9 +34,11 @@ REQUIRED_AGENT_FILES = [
 
 REQUIRED_SKILL_FILES = [
     ROOT / "docs/skills/brainstorming.md",
+    ROOT / "docs/skills/bug-diagnosis.md",
     ROOT / "docs/skills/test-driven-development.md",
     ROOT / "docs/skills/subagent-development.md",
     ROOT / "docs/skills/deploy.md",
+    ROOT / "docs/skills/deploy-platforms.md",
     ROOT / "docs/skills/client-workflow.md",
     ROOT / "docs/skills/session-recovery.md",
     ROOT / "docs/skills/ship-and-docs.md",
@@ -104,10 +106,10 @@ REQUIRED_CLAUDE_HEADINGS = [
     "## Completion Rule",
 ]
 
-# Keep the kernel below 700 words (~900-1400 tokens). The budget accounts for
-# the mode/phase/gate model, the deploy phase, the Skills directory listing,
+# Keep the kernel below 650 words. The budget accounts for the mode/phase/gate
+# model, the deploy phase, iteration support, the Skills directory listing,
 # and the Project Overrides section in the template variant.
-MAX_CLAUDE_WORDS = 700
+MAX_CLAUDE_WORDS = 650
 
 # Template placeholder pattern: <記入>, <topic>, <docs/requirements/ のパス>, etc.
 # Matches angle-bracket tokens that look like fill-in markers.
@@ -160,6 +162,20 @@ def main() -> int:
                 f"{path.relative_to(ROOT)} contains docs/skills/ file path reference"
                 " (project CLAUDE.md should use skill names, not paths)"
             )
+
+    # Template word count limits to prevent bloat.
+    TEMPLATE_WORD_LIMITS = {
+        ROOT / "templates/PLAN.template.md": 400,
+        ROOT / "templates/SECURITY-REVIEW.template.md": 150,
+        ROOT / "templates/VERIFICATION.template.md": 120,
+    }
+    for tpl_path, limit in TEMPLATE_WORD_LIMITS.items():
+        if tpl_path.exists():
+            tpl_count = word_count(read_text(tpl_path))
+            if tpl_count > limit:
+                failures.append(
+                    f"{tpl_path.relative_to(ROOT)} is too large: {tpl_count} words > {limit}"
+                )
 
     # Failure rule sync check: the block starting with "Stop after 3 failures"
     # must be identical across all CLAUDE.md variants.

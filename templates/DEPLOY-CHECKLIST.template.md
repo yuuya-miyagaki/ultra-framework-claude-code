@@ -25,29 +25,9 @@
 
 ## プラットフォーム別チェック
 
-<該当プラットフォームのみ記入>
+該当プラットフォームのチェックリストは `deploy-platforms` スキルを参照。
 
-### Vercel
-
-- [ ] next.config.js に `output: "standalone"` がないこと
-- [ ] 環境変数を `printf '%s' | vercel env add` で設定（改行なし）
-- [ ] Neon 連携は手動設定（`vercel integration add` は使わない）
-- [ ] DEMO_MODE / 認証バイパスが無効
-- [ ] `vercel --prod` でデプロイ後、ヘルスチェック URL を確認
-
-### Cloud Run
-
-- [ ] Dockerfile + `output: "standalone"` の整合性
-- [ ] Cloud SQL 接続設定
-- [ ] IAM 権限の最小設定
-
-### 共通
-
-- [ ] 認証が有効であること（DEMO_MODE = blocker）
-- [ ] 環境変数の一覧と設定状態
-- [ ] DB マイグレーション実行
-- [ ] 外部連携（Slack / Stripe 等）の接続テスト
-- [ ] ヘルスチェックエンドポイントの応答確認
+- [ ] プラットフォーム固有チェックを実施した — 結果: <記入>
 
 ## staging
 
