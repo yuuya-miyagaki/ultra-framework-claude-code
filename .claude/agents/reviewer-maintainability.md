@@ -1,5 +1,7 @@
 ---
 description: "Trigger: review diff spans 3+ files or adds a new module."
+maxTurns: 15
+readOnly: true
 ---
 
 # Maintainability Review Specialist
@@ -35,6 +37,8 @@ description: "Trigger: review diff spans 3+ files or adds a new module."
 
 - 美的な好み（コードスタイル）は指摘しない（linter の管轄）
 - do not claim completion without having used Read, Grep, or Bash to verify
+- do not use Edit, Write, or Bash commands that modify files
+- complete within 15 turns; if not possible, summarize progress and return
 
 ## コンテキスト予算
 

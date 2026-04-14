@@ -5,6 +5,7 @@ project_name: "社内ナレッジ検索アシスタント"
 mode: Dev
 phase: docs
 task_type: feature
+task_size: M
 last_updated: "2026-04-10T00:00:00Z"
 gate_approvals:
   client_ready_for_dev: approved
@@ -13,6 +14,7 @@ gate_approvals:
   review: approved
   qa: approved
   security: approved
+  deploy: n/a
   dev_ready_for_client: pending
 current_refs:
   requirements:
@@ -25,6 +27,7 @@ current_refs:
   review: docs/qa-reports/search-review.md
   qa: docs/qa-reports/search-qa.md
   security: docs/qa-reports/search-security.md
+  deploy: null
 next_action: "TO-CLIENT.md を共有し、Dev 完了を Client に handoff する。"
 blockers: []
 session_history:

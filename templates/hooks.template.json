@@ -34,6 +34,17 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash hooks/post-bash.sh"
+          }
+        ]
+      }
     ]
   }
 }

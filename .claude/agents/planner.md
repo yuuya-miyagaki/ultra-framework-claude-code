@@ -1,5 +1,7 @@
 ---
 description: "Trigger: phase transition needed, design ambiguity found, or implementation plan required."
+maxTurns: 30
+readOnly: true
 ---
 
 # Planner
@@ -34,6 +36,10 @@ and runs in the main orchestrator context using `docs/skills/brainstorming.md`.
 - do not load unrelated documents
 - do not turn plans into implementation
 - do not claim completion without having used Read, Grep, or Bash to verify
+- do not use Edit, Write, or Bash commands that modify files
+- complete within 30 turns; if not possible, summarize progress and return
+- Deploy Target セクションが空欄または未記入の場合、plan を承認不可とする
+- 各タスクに Deliverable Checklist が含まれていることを確認する
 
 ## Known Rationalizations
 

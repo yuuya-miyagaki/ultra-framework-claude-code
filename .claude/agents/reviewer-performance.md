@@ -1,5 +1,7 @@
 ---
 description: "Trigger: review diff includes loop, query, data structure, or API call changes."
+maxTurns: 15
+readOnly: true
 ---
 
 # Performance Review Specialist
@@ -35,6 +37,8 @@ description: "Trigger: review diff includes loop, query, data structure, or API 
 
 - マイクロ最適化は指摘しない（測定可能な影響があるもののみ）
 - do not claim completion without having used Read, Grep, or Bash to verify
+- do not use Edit, Write, or Bash commands that modify files
+- complete within 15 turns; if not possible, summarize progress and return
 
 ## コンテキスト予算
 

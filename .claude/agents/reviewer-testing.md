@@ -1,5 +1,7 @@
 ---
 description: "Trigger: review diff includes test file changes or test coverage is questionable."
+maxTurns: 15
+readOnly: true
 ---
 
 # Testing Review Specialist
@@ -35,6 +37,8 @@ description: "Trigger: review diff includes test file changes or test coverage i
 
 - 実装コードの修正提案はしない（テスト品質のみ）
 - do not claim completion without having used Read, Grep, or Bash to verify
+- do not use Edit, Write, or Bash commands that modify files
+- complete within 15 turns; if not possible, summarize progress and return
 
 ## コンテキスト予算
 

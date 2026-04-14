@@ -9,9 +9,12 @@
 - Load only the documents required for the current task.
 - Use framework phases, not `EnterPlanMode`.
 - Persist project lessons in `docs/LEARNINGS.md`, not auto-memory.
-- Stop after 3 consecutive failures on the same error and report the blocker.
+- Stop after 3 failures toward the same goal and report the blocker.
+  Count by goal, not method — changing approach does not reset the count.
+  TDD red-to-green cycles are excluded. Each test case is a separate goal.
 - Never run destructive commands (`push --force`, `reset --hard`, `rm -rf`,
   `DROP`, branch deletion) without explicit user approval.
+- Enforce rules via hooks and validators (Policy as Code).
 
 ## Session Start
 
@@ -25,7 +28,7 @@
 
 - Modes: `Client`, `Dev`
 - Client phases: `onboard -> discovery -> requirements -> scope -> acceptance -> handover`
-- Dev phases: `brainstorm -> plan -> implement -> review -> qa -> security -> ship -> docs`
+- Dev phases: `brainstorm -> plan -> implement -> review -> qa -> security -> deploy -> ship -> docs`
 
 Mode gates:
 
@@ -38,7 +41,8 @@ Only `client_ready_for_dev` moves work to `Dev`.
 Before `brainstorm`, reread `docs/STATUS.md`, confirm refs, and restate
 objective, blockers, and next action. Required; not a phase.
 
-`ship` writes `docs/handover/TO-CLIENT.md`; `docs` updates
+`deploy` runs `deploy` skill checklist (deploy-prep, staging, uat, production,
+post-deploy). `ship` writes `docs/handover/TO-CLIENT.md`; `docs` updates
 `docs/LEARNINGS.md` and requests `dev_ready_for_client`.
 
 Phase transition protocol:
@@ -49,20 +53,22 @@ Phase transition protocol:
 
 Phase gates:
 
-- Do not enter `plan` before `brainstorm` approval.
-- Do not enter `implement` before `plan` approval.
+- Do not enter a phase before its prior gate is approved.
+  Task size routing overrides: skipped phases exempt their gates.
 - Do not write production code before a failing test exists.
-- Do not enter `qa` before `review` approval.
-- Do not enter `security` before `qa` approval.
 - Do not claim completion before the required evidence exists.
 
-No separate `implement` approval key; `plan` approval controls entry.
+Dev gates by task type:
 
-Dev verification by task type:
+- feature/refactor/framework: review + qa + security + deploy.
+- bugfix: review only; rest n/a with reason.
+- hotfix: review preferred; rest deferred with reason.
 
-- `feature`, `refactor`, `framework`: require `review`, `qa`, `security`.
-- `bugfix`: require `review`; `qa` or `security` may be `n/a` with reason.
-- `hotfix`: prefer `review`; `qa` or `security` may be deferred with reason.
+Task size (set in STATUS.md):
+
+- S (1 file): implement → review → ship
+- M (2-5 files): skip deploy
+- L (6+): all Dev phases
 
 ## Routing
 
@@ -71,7 +77,7 @@ Dev verification by task type:
 - Use `implementer` for code and test changes.
 - Use `reviewer` for fresh-context review and findings.
 - Use `qa` for validation, reproduction, and QA reports.
-- Use `security` for security-focused review and residual risk notes.
+- Use `security` for security review and residual risk notes.
 - Use `ui` only for UI or UX-heavy work.
 
 - Use `reviewer-testing`, `reviewer-performance`, `reviewer-maintainability`
@@ -81,12 +87,12 @@ Default: use subagents only when they make work clearer, safer, or smaller.
 
 ## Context Budget Policy
 
-- Always-on context is limited to `CLAUDE.md` and `docs/STATUS.md`.
+Context layers: L0 `CLAUDE.md` + `docs/STATUS.md` (always-on), L1 phase refs,
+L2 task files, L3 history and external (on-demand).
+
 - Prefer repo files over chat history.
-- Keep detailed reads pull-based.
-- Avoid opening more than three detailed docs at once.
-- Summarize at phase transitions, not after every step.
-- Keep `docs/STATUS.md` short and current.
+- Pull-based reads; max three docs at once.
+- Summarize at phase transitions only.
 - Update `docs/STATUS.md` before pauses or context compression.
 
 ## Skills
@@ -94,11 +100,12 @@ Default: use subagents only when they make work clearer, safer, or smaller.
 - brainstorming
 - test-driven-development
 - subagent-development
+- deploy
 - client-workflow
 - session-recovery
 - ship-and-docs
 
-Load skills only for the current phase or recovery scenario.
+Load skills for the current phase or recovery only.
 Do not preload.
 
 ## Source of Truth
@@ -106,7 +113,7 @@ Do not preload.
 - Operating rules: `CLAUDE.md`
 - Current phase and next action: `docs/STATUS.md`
 - Requirements: `docs/requirements/*`
-- Design and planning artifacts: `docs/specs/*`, `docs/plans/*`
+- Design and plans: `docs/specs/*`, `docs/plans/*`
 - Review, QA, and security evidence: `docs/qa-reports/*`
 - Skills: named skills
 - Actual behavior: code, tests, and command output
@@ -120,7 +127,7 @@ A task is only complete when:
 - the relevant checks have been run or explicitly skipped with reason
 - `docs/STATUS.md` points to the active refs
 - blockers and residual risks are recorded
-- the user-facing completion summary is evidence-based
+- the completion summary is evidence-based
 
 ## Project Overrides
 

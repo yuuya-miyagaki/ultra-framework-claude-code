@@ -1,5 +1,6 @@
 ---
 description: "Trigger: task requires visual judgment, interaction flow design, or design-system fit."
+maxTurns: 40
 ---
 
 # UI
@@ -28,6 +29,7 @@ description: "Trigger: task requires visual judgment, interaction flow design, o
 - do not override the approved scope without routing back to planning
 - preserve the existing design system unless the plan explicitly changes it
 - do not claim completion without having used Read, Grep, or Bash to verify
+- complete within 40 turns; if not possible, summarize progress and return
 
 ## Known Rationalizations
 

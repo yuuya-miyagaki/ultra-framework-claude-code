@@ -10,6 +10,24 @@
 - 参照要件: <docs/requirements/ のパス>
 - 参照設計: <docs/specs/ のパス>
 
+## Deploy Target（必須 — 空欄のままでは plan 承認不可）
+
+### プラットフォーム
+
+- Hosting: <Vercel / Cloud Run / Docker / VPS / n/a>
+- Database: <Neon / Cloud SQL / Supabase / PlanetScale / n/a>
+- CI/CD: <Vercel Git / GitHub Actions / Cloud Build / n/a>
+
+### 互換性確認
+
+- next.config `output` 設定: <default / standalone / export / n/a>
+- 上記がデプロイ先と互換であることを確認: <Yes / No + 理由>
+
+### 認証方式
+
+- 認証プロバイダ: <Firebase Auth / Google OAuth / Auth.js / None>
+- DEMO_MODE 予定: <開発のみ / ステージングまで / 本番は認証必須>
+
 ## Git 戦略
 
 - ブランチ: `feature/<topic>` (main から)
@@ -42,9 +60,13 @@
 ## タスク分解
 
 > 各タスクは **2-5 分** の単位。「and」が入るなら分割する。
+>
+> 複数タスクで重複するヘルパー（findXOrThrow, assertRole, validateX 等）がある場合、
+> Task 0（共通ユーティリティ）として先に実装する。後続タスクは blockedBy で依存させる。
 
 ### タスク 1: <コンポーネント名>
 
+**blockedBy:** なし
 **モデル:** `haiku` | `sonnet` | `opus` — <選定理由>
 
 **ファイル:**
@@ -63,13 +85,24 @@
 **受入条件:**
 - <このタスクの完了を判断する具体的な条件>
 
+**Deliverable Checklist（タスク完了前に全項目を確認）:**
+- [ ] <具体的なファイルパス or 機能> が存在し動作する
+- [ ] テストが上記全てをカバーしている
+
 **インターフェース（任意）:**
 必要な場合のみ、型シグネチャや関数定義を記載する。
 フルコードは plan に含めない — 実装時に書く。
 
 ### タスク 2: <コンポーネント名>
 
+**blockedBy:** Task 1
 (同じ形式で繰り返す)
+
+## External Integrations（該当する場合のみ記載）
+
+| 連携先 | テスト方式 | テスト環境 | 本番後テスト手順 |
+|--------|-----------|-----------|----------------|
+| <記入> | <Mock + E2E 等> | <テストチャンネル等> | <記入> |
 
 ## 事前準備
 

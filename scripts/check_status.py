@@ -27,7 +27,7 @@ REQUIRED_TOP_LEVEL_KEYS = [
     "session_history",
 ]
 
-OPTIONAL_TOP_LEVEL_KEYS: set[str] = set()
+OPTIONAL_TOP_LEVEL_KEYS: set[str] = {"task_size"}
 
 REQUIRED_APPROVAL_KEYS = [
     "client_ready_for_dev",
@@ -36,6 +36,7 @@ REQUIRED_APPROVAL_KEYS = [
     "review",
     "qa",
     "security",
+    "deploy",
     "dev_ready_for_client",
 ]
 
@@ -54,23 +55,44 @@ ALLOWED_PHASES = {
     "review",
     "qa",
     "security",
+    "deploy",
     "ship",
     "docs",
 }
 MODE_PHASES = {
     "Client": {"onboard", "discovery", "requirements", "scope", "acceptance", "handover"},
-    "Dev": {"brainstorm", "plan", "implement", "review", "qa", "security", "ship", "docs"},
+    "Dev": {"brainstorm", "plan", "implement", "review", "qa", "security", "deploy", "ship", "docs"},
 }
-EXPECTED_CURRENT_REF_KEYS = {"requirements", "plan", "spec", "review", "qa", "security"}
+EXPECTED_CURRENT_REF_KEYS = {"requirements", "plan", "spec", "review", "qa", "security", "deploy"}
 ALLOWED_TASK_TYPES = {"feature", "refactor", "bugfix", "hotfix", "framework"}
+ALLOWED_TASK_SIZES = {"S", "M", "L"}
+# Phase flow constraints by task size.
+# S: minimal flow (1-file fixes). M: skip deploy. L: all phases.
+SIZE_ALLOWED_PHASES = {
+    "S": {"brainstorm", "implement", "review", "ship"},
+    "M": {"brainstorm", "plan", "implement", "review", "qa", "security", "ship", "docs"},
+    "L": {"brainstorm", "plan", "implement", "review", "qa", "security", "deploy", "ship", "docs"},
+}
+
+# Task types that require strict gate enforcement (no n/a allowed).
+STRICT_GATE_TASK_TYPES = {"feature", "refactor", "framework"}
+# Per-phase gates that must be approved (not n/a) for strict task types.
+# At deploy: review/qa/security are prerequisites and must already be approved.
+# At ship/docs: deploy must also be approved.
+STRICT_GATE_BY_PHASE = {
+    "deploy": ["review", "qa", "security"],
+    "ship": ["review", "qa", "security", "deploy"],
+    "docs": ["review", "qa", "security", "deploy"],
+}
 PHASE_REQUIRES_GATES = {
     "plan": ["brainstorm"],
     "implement": ["brainstorm", "plan"],
     "review": ["brainstorm", "plan"],
     "qa": ["brainstorm", "plan", "review"],
     "security": ["brainstorm", "plan", "review", "qa"],
-    "ship": ["brainstorm", "plan", "review", "qa", "security"],
-    "docs": ["brainstorm", "plan", "review", "qa", "security"],
+    "deploy": ["brainstorm", "plan", "review", "qa", "security"],
+    "ship": ["brainstorm", "plan", "review", "qa", "security", "deploy"],
+    "docs": ["brainstorm", "plan", "review", "qa", "security", "deploy"],
 }
 MAX_SESSION_HISTORY_ENTRIES = 5
 REQUIRED_BODY_HEADINGS = [
@@ -241,6 +263,17 @@ def validate_status_file(path: Path) -> list[str]:
     if task_type and task_type not in ALLOWED_TASK_TYPES:
         failures.append(f"{path} has invalid task_type: {task_type}")
 
+    task_size = extract_scalar_value(frontmatter, "task_size")
+    if task_size is not None:
+        if task_size not in ALLOWED_TASK_SIZES:
+            failures.append(f"{path} has invalid task_size: {task_size}")
+        elif mode == "Dev" and phase and phase in ALLOWED_PHASES:
+            allowed = SIZE_ALLOWED_PHASES.get(task_size, ALLOWED_PHASES)
+            if phase not in allowed:
+                failures.append(
+                    f"{path} phase '{phase}' is not allowed for task_size '{task_size}'"
+                )
+
     approvals = extract_approval_map(frontmatter)
     for key in REQUIRED_APPROVAL_KEYS:
         if key not in approvals:
@@ -251,12 +284,34 @@ def validate_status_file(path: Path) -> list[str]:
                 f"{path} has invalid approval value for {key}: {approvals[key]}"
             )
 
+    # Phase gate check: prior gates must not be pending/blocked.
+    # When task_size is set, only require gates whose phase is in the size flow.
     if phase and phase in PHASE_REQUIRES_GATES:
-        for required_gate in PHASE_REQUIRES_GATES[phase]:
+        required_prior = PHASE_REQUIRES_GATES[phase]
+        if task_size and task_size in SIZE_ALLOWED_PHASES:
+            allowed_phases = SIZE_ALLOWED_PHASES[task_size]
+            required_prior = [g for g in required_prior if g in allowed_phases]
+        for required_gate in required_prior:
             gate_value = approvals.get(required_gate)
             if gate_value in {"pending", "blocked"}:
                 failures.append(
                     f"{path} is in phase '{phase}' but gate '{required_gate}' is '{gate_value}'"
+                )
+
+    # Dev verification by task type: feature/refactor/framework require
+    # specific gates to be approved (not n/a) depending on current phase.
+    # When task_size is set, only enforce gates whose phase is in the size flow.
+    if task_type in STRICT_GATE_TASK_TYPES and task_size != "S" and phase in STRICT_GATE_BY_PHASE:
+        strict_gates = STRICT_GATE_BY_PHASE[phase]
+        if task_size and task_size in SIZE_ALLOWED_PHASES:
+            allowed_phases = SIZE_ALLOWED_PHASES[task_size]
+            strict_gates = [g for g in strict_gates if g in allowed_phases]
+        for gate in strict_gates:
+            gate_value = approvals.get(gate)
+            if gate_value == "n/a":
+                failures.append(
+                    f"{path} task_type '{task_type}' requires gate '{gate}' "
+                    f"to be approved at phase '{phase}', but it is 'n/a'"
                 )
 
     for heading in REQUIRED_BODY_HEADINGS:
@@ -276,7 +331,7 @@ def validate_status_file(path: Path) -> list[str]:
     req_value = refs.get("requirements")
     if req_value is not None and not isinstance(req_value, list):
         failures.append(f"{path} current_refs.requirements must be a list, got scalar: {req_value}")
-    for scalar_key in ["plan", "spec", "review", "qa", "security"]:
+    for scalar_key in ["plan", "spec", "review", "qa", "security", "deploy"]:
         sv = refs.get(scalar_key)
         if isinstance(sv, list):
             failures.append(f"{path} current_refs.{scalar_key} must be scalar-or-null, got list")
@@ -287,6 +342,7 @@ def validate_status_file(path: Path) -> list[str]:
         "review": "review",
         "qa": "qa",
         "security": "security",
+        "deploy": "deploy",
     }
     for gate_key, ref_key in gate_ref_mapping.items():
         gate_value = approvals.get(gate_key)
@@ -299,7 +355,7 @@ def validate_status_file(path: Path) -> list[str]:
             )
 
     root = path.parent.parent
-    for key in ["plan", "spec", "review", "qa", "security"]:
+    for key in ["plan", "spec", "review", "qa", "security", "deploy"]:
         value = refs.get(key)
         if isinstance(value, str) and value != "null":
             ref_path = root / value

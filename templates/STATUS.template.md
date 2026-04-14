@@ -5,6 +5,7 @@ project_name: ""
 mode: Client
 phase: onboard
 task_type: feature
+task_size: M
 last_updated: ""
 # gate name = phase whose output is approved; mode-transition gates unlock
 # movement between Client and Dev
@@ -15,6 +16,7 @@ gate_approvals:
   review: pending
   qa: pending
   security: pending
+  deploy: pending
   dev_ready_for_client: pending
 current_refs:
   requirements: []
@@ -23,6 +25,7 @@ current_refs:
   review: null
   qa: null
   security: null
+  deploy: null
 next_action: ""
 blockers: []
 session_history:

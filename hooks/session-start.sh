@@ -34,7 +34,7 @@ fi
 GATES=""
 GATE_SECTION=$(grep -A20 "^gate_approvals:" "$STATUS_FILE" || true)
 if [ -n "$GATE_SECTION" ]; then
-  for gate_key in plan review qa security; do
+  for gate_key in plan review qa security deploy; do
     gate_val=$(printf '%s' "$GATE_SECTION" | grep -m1 "${gate_key}:" | sed "s/.*${gate_key}:[[:space:]]*//" | sed 's/^"//;s/"$//' || true)
     if [ -n "$gate_val" ] && [ "$gate_val" != "null" ]; then
       GATES="${GATES} ${gate_key}=${gate_val}"
@@ -42,8 +42,14 @@ if [ -n "$GATE_SECTION" ]; then
   done
 fi
 
+# Extract task_size for hook profile hint.
+TASK_SIZE=$(extract_value "task_size")
+
 # Build context message.
 CONTEXT="[Ultra Framework] mode=${MODE} phase=${PHASE}"
+if [ -n "$TASK_SIZE" ]; then
+  CONTEXT="${CONTEXT} size=${TASK_SIZE}"
+fi
 if [ -n "$NEXT_ACTION" ] && [ "$NEXT_ACTION" != '""' ]; then
   CONTEXT="${CONTEXT} | next: ${NEXT_ACTION}"
 fi
@@ -77,6 +83,9 @@ case "$PHASE" in
     ;;
   security)
     HINT="エビデンスなき完了なし / 残留リスクを記録せよ"
+    ;;
+  deploy)
+    HINT="skill: deploy / Security Blockers確認必須 / 3回失敗=ゴールベースカウント"
     ;;
   ship|docs)
     HINT="skill: ship-and-docs / LEARNINGS更新必須(confidence付き)"

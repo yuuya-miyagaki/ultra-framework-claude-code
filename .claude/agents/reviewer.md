@@ -1,5 +1,7 @@
 ---
 description: "Trigger: implementation complete, ready for pre-QA code review."
+maxTurns: 20
+readOnly: true
 ---
 
 # Reviewer
@@ -39,6 +41,8 @@ description: "Trigger: implementation complete, ready for pre-QA code review."
 - do not silently change production code
 - review the active diff, not the whole repository by default
 - do not claim completion without having used Read, Grep, or Bash to verify
+- do not use Edit, Write, or Bash commands that modify files
+- complete within 20 turns; if not possible, summarize progress and return
 
 ## Known Rationalizations
 

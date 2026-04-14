@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -35,6 +36,7 @@ REQUIRED_SKILL_FILES = [
     ROOT / "docs/skills/brainstorming.md",
     ROOT / "docs/skills/test-driven-development.md",
     ROOT / "docs/skills/subagent-development.md",
+    ROOT / "docs/skills/deploy.md",
     ROOT / "docs/skills/client-workflow.md",
     ROOT / "docs/skills/session-recovery.md",
     ROOT / "docs/skills/ship-and-docs.md",
@@ -57,6 +59,7 @@ REQUIRED_TEMPLATE_FILES = [
     ROOT / "templates/LEARNINGS.template.md",
     ROOT / "templates/BRAINSTORM-RECORD.template.md",
     ROOT / "templates/VERIFICATION.template.md",
+    ROOT / "templates/DEPLOY-CHECKLIST.template.md",
     ROOT / "templates/hooks.template.json",
 ]
 
@@ -65,6 +68,7 @@ REQUIRED_HOOK_FILES = [
     ROOT / "hooks/check-gate.sh",
     ROOT / "hooks/check-destructive.sh",
     ROOT / "hooks/check-tdd.sh",
+    ROOT / "hooks/post-bash.sh",
 ]
 
 REQUIRED_EXAMPLE_FILES = [
@@ -85,6 +89,7 @@ REQUIRED_EXAMPLE_FILES = [
     ROOT / "examples/minimal-project/docs/qa-reports/search-qa.md",
     ROOT / "examples/minimal-project/docs/qa-reports/search-security.md",
     ROOT / "examples/minimal-project/docs/qa-reports/search-verification.md",
+    ROOT / "examples/minimal-project/docs/qa-reports/search-deploy-checklist.md",
 ]
 
 REQUIRED_CLAUDE_HEADINGS = [
@@ -98,10 +103,10 @@ REQUIRED_CLAUDE_HEADINGS = [
     "## Completion Rule",
 ]
 
-# Keep the kernel below 650 words (~850-1300 tokens). The budget accounts for
-# the mode/phase/gate model, the Skills directory listing, and the Project
-# Overrides section in the template variant.
-MAX_CLAUDE_WORDS = 650
+# Keep the kernel below 700 words (~900-1400 tokens). The budget accounts for
+# the mode/phase/gate model, the deploy phase, the Skills directory listing,
+# and the Project Overrides section in the template variant.
+MAX_CLAUDE_WORDS = 700
 
 # Template placeholder pattern: <記入>, <topic>, <docs/requirements/ のパス>, etc.
 # Matches angle-bracket tokens that look like fill-in markers.
@@ -141,7 +146,7 @@ def main() -> int:
             if heading not in text:
                 failures.append(f"{path.relative_to(ROOT)} is missing heading: {heading}")
         count = word_count(text)
-        if path != ROOT / "examples/minimal-project/CLAUDE.md" and count > MAX_CLAUDE_WORDS:
+        if count > MAX_CLAUDE_WORDS:
             failures.append(
                 f"{path.relative_to(ROOT)} is too large: {count} words > {MAX_CLAUDE_WORDS}"
             )
@@ -171,8 +176,76 @@ def main() -> int:
         if "/Users/" in readme:
             failures.append("README.md contains machine-specific absolute paths")
 
+    # Hook template validation: verify that hooks.template.json registers
+    # all required hook scripts in the correct event sections.
+    hooks_template_path = ROOT / "templates/hooks.template.json"
+    if hooks_template_path.exists():
+        try:
+            hooks_data = json.loads(read_text(hooks_template_path))
+        except json.JSONDecodeError as e:
+            failures.append(f"hooks.template.json is not valid JSON: {e}")
+            hooks_data = {}
+        if not isinstance(hooks_data, dict):
+            failures.append("hooks.template.json top-level value is not an object")
+            hooks_data = {}
+        hooks_config = hooks_data.get("hooks", {})
+        if not isinstance(hooks_config, dict):
+            failures.append("hooks.template.json 'hooks' value is not an object")
+            hooks_config = {}
+        # Map: event -> list of required command substrings.
+        REQUIRED_HOOK_REGISTRATIONS = {
+            "SessionStart": ["hooks/session-start.sh"],
+            "PreToolUse": [
+                "hooks/check-gate.sh",
+                "hooks/check-tdd.sh",
+                "hooks/check-destructive.sh",
+            ],
+            "PostToolUse": ["hooks/post-bash.sh"],
+        }
+        for event, required_commands in REQUIRED_HOOK_REGISTRATIONS.items():
+            event_entries = hooks_config.get(event, [])
+            if not isinstance(event_entries, list):
+                failures.append(
+                    f"hooks.template.json {event} value is not an array"
+                )
+                continue
+            # Collect all command strings registered under this event.
+            registered_commands = []
+            for entry in event_entries:
+                if not isinstance(entry, dict):
+                    failures.append(
+                        f"hooks.template.json {event} contains non-object entry"
+                    )
+                    continue
+                hooks_list = entry.get("hooks", [])
+                if not isinstance(hooks_list, list):
+                    failures.append(
+                        f"hooks.template.json {event} entry 'hooks' is not an array"
+                    )
+                    continue
+                for hook in hooks_list:
+                    if not isinstance(hook, dict):
+                        failures.append(
+                            f"hooks.template.json {event} hook entry is not an object"
+                        )
+                        continue
+                    cmd = hook.get("command", "")
+                    if not isinstance(cmd, str):
+                        failures.append(
+                            f"hooks.template.json {event} hook command is not a string"
+                        )
+                        continue
+                    if cmd:
+                        registered_commands.append(cmd)
+            for required_cmd in required_commands:
+                if not any(required_cmd in cmd for cmd in registered_commands):
+                    failures.append(
+                        f"hooks.template.json is missing '{required_cmd}' "
+                        f"registration under {event}"
+                    )
+
     # Agent structure validation: CSO description, rationalization tables,
-    # and hallucination guard boundaries.
+    # hallucination guard boundaries, and technical constraints.
     CORE_AGENT_FILES = [
         ROOT / ".claude/agents/planner.md",
         ROOT / ".claude/agents/implementer.md",
@@ -181,6 +254,16 @@ def main() -> int:
         ROOT / ".claude/agents/security.md",
         ROOT / ".claude/agents/ui.md",
     ]
+    # Agents that must not modify files (readOnly: true in frontmatter).
+    READ_ONLY_AGENT_FILES = {
+        ROOT / ".claude/agents/planner.md",
+        ROOT / ".claude/agents/reviewer.md",
+        ROOT / ".claude/agents/qa.md",
+        ROOT / ".claude/agents/security.md",
+        ROOT / ".claude/agents/reviewer-testing.md",
+        ROOT / ".claude/agents/reviewer-performance.md",
+        ROOT / ".claude/agents/reviewer-maintainability.md",
+    }
     for path in REQUIRED_AGENT_FILES:
         if not path.exists():
             continue
@@ -195,6 +278,35 @@ def main() -> int:
         # Core agents must have rationalization table.
         if path in CORE_AGENT_FILES and "## Known Rationalizations" not in text:
             failures.append(f"{rel} missing rationalization table (## Known Rationalizations)")
+        # All agents must have maxTurns in frontmatter with matching boundary rule.
+        # Scope regex to YAML frontmatter (between first --- pair) and body respectively.
+        fm_match = re.match(r"---\s*\n(.*?)\n---", text, re.DOTALL)
+        frontmatter_section = fm_match.group(1) if fm_match else ""
+        body_section = text[fm_match.end():] if fm_match else text
+        frontmatter_turns = re.search(r"maxTurns:\s*(\d+)", frontmatter_section)
+        # Scope turn-limit search to ## Boundaries section only.
+        boundaries_match = re.search(
+            r"## Boundaries\b(.*?)(?=\n## |\Z)", body_section, re.DOTALL
+        )
+        boundaries_section = boundaries_match.group(1) if boundaries_match else ""
+        boundary_turns = re.search(r"complete within (\d+) turns", boundaries_section)
+        if not frontmatter_turns:
+            failures.append(f"{rel} missing maxTurns in frontmatter")
+        if not boundary_turns:
+            failures.append(f"{rel} missing turn limit boundary rule ('complete within N turns')")
+        if frontmatter_turns and boundary_turns:
+            fm_val = int(frontmatter_turns.group(1))
+            bd_val = int(boundary_turns.group(1))
+            if fm_val != bd_val:
+                failures.append(
+                    f"{rel} maxTurns mismatch: frontmatter={fm_val}, boundary={bd_val}"
+                )
+        # Read-only agents must have readOnly frontmatter and boundary rule.
+        if path in READ_ONLY_AGENT_FILES:
+            if "readOnly: true" not in text:
+                failures.append(f"{rel} missing readOnly: true in frontmatter")
+            if "do not use Edit, Write, or Bash commands that modify files" not in text:
+                failures.append(f"{rel} missing read-only boundary rule")
 
     # Check example project files for leftover template placeholders.
     for path in REQUIRED_EXAMPLE_FILES:

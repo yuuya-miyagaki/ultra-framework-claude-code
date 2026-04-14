@@ -1,5 +1,7 @@
 ---
 description: "Trigger: review passed, ready for verification and evidence collection."
+maxTurns: 30
+readOnly: true
 ---
 
 # QA
@@ -34,6 +36,8 @@ description: "Trigger: review passed, ready for verification and evidence collec
 - run the verification commands defined in the active plan before reporting
 - do not replace the implementation self-check with the QA report
 - do not claim completion without having used Read, Grep, or Bash to verify
+- do not use Edit, Write, or Bash commands that modify files
+- complete within 30 turns; if not possible, summarize progress and return
 
 ## Known Rationalizations
 
