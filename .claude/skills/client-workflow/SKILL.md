@@ -1,3 +1,10 @@
+---
+name: client-workflow
+description: "Client phase progression rules for Client mode operation."
+disable-model-invocation: true
+user-invocable: false
+---
+
 # Client フェーズ進行ルール
 
 > Client モードのフェーズ進行を統制する正本。各フェーズの産出物・完了条件・

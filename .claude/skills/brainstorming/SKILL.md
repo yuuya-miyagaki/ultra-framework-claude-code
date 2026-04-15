@@ -1,3 +1,10 @@
+---
+name: brainstorming
+description: "Structured brainstorming process for design decisions. Used in brainstorm phase for feature/refactor/framework tasks."
+disable-model-invocation: true
+user-invocable: false
+---
+
 # ブレインストーミング
 
 > 設計前の構造的な意思決定プロセス。コードを書く前に「何を、なぜ、どう作るか」を
@@ -47,7 +54,7 @@ skip する場合は `gate_approvals.brainstorm` を `n/a` に設定する。
 ### Step 3: 質問による洗練
 
 **ルール:**
-- 質問は **1回のメッセージに1つだけ**
+- 関連する質問は **最大3つまでグループ化可能**。先の回答に依存する質問は分離する
 - 選択式を優先（A/B/C から選んでもらう）
 - 目的・制約・成功基準の理解に集中する
 - 答えが出たら次の質問へ進む

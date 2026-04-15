@@ -1,3 +1,10 @@
+---
+name: ship-and-docs
+description: "Final ship and documentation phase. Handover creation and LEARNINGS capture."
+disable-model-invocation: true
+user-invocable: false
+---
+
 # 出荷と文書化
 
 > security 完了後の最終フェーズ。成果物を引き渡し文書にまとめ、プロジェクト知見を

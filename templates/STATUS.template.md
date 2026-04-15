@@ -1,11 +1,10 @@
 ---
 framework: ultra-framework-claude-code
-framework_version: "0.1.0"
+framework_version: "0.6.0"
 project_name: ""
 mode: Client
 phase: onboard
 task_type: feature
-task_size: M
 iteration: 1
 ui_surface: false
 last_updated: ""
@@ -31,11 +30,7 @@ current_refs:
 external_evidence: []
 next_action: ""
 blockers: []
-session_history:
-  - date: ""
-    mode: ""
-    phase: ""
-    note: ""
+session_history: []
 ---
 
 ## Summary

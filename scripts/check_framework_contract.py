@@ -11,6 +11,8 @@ from check_status import validate_status_file
 
 ROOT = Path(__file__).resolve().parents[1]
 
+FRAMEWORK_VERSION = "0.6.0"
+
 REQUIRED_FILES = [
     ROOT / "README.md",
     ROOT / "CLAUDE.md",
@@ -18,6 +20,7 @@ REQUIRED_FILES = [
     ROOT / "docs/LEARNINGS.md",
     ROOT / "docs/MIGRATION-FROM-v7.md",
     ROOT / "scripts/check_status.py",
+    ROOT / "scripts/update-gate.sh",
 ]
 
 REQUIRED_AGENT_FILES = [
@@ -33,15 +36,28 @@ REQUIRED_AGENT_FILES = [
 ]
 
 REQUIRED_SKILL_FILES = [
-    ROOT / "docs/skills/brainstorming.md",
-    ROOT / "docs/skills/bug-diagnosis.md",
-    ROOT / "docs/skills/test-driven-development.md",
-    ROOT / "docs/skills/subagent-development.md",
-    ROOT / "docs/skills/deploy.md",
-    ROOT / "docs/skills/deploy-platforms.md",
-    ROOT / "docs/skills/client-workflow.md",
-    ROOT / "docs/skills/session-recovery.md",
-    ROOT / "docs/skills/ship-and-docs.md",
+    ROOT / ".claude/skills/brainstorming/SKILL.md",
+    ROOT / ".claude/skills/bug-diagnosis/SKILL.md",
+    ROOT / ".claude/skills/tdd/SKILL.md",
+    ROOT / ".claude/skills/subagent-dev/SKILL.md",
+    ROOT / ".claude/skills/deploy/SKILL.md",
+    ROOT / ".claude/skills/deploy/platforms.md",
+    ROOT / ".claude/skills/client-workflow/SKILL.md",
+    ROOT / ".claude/skills/session-recovery/SKILL.md",
+    ROOT / ".claude/skills/ship-and-docs/SKILL.md",
+]
+
+REQUIRED_RULES_FILES = [
+    ROOT / ".claude/rules/state-machine.md",
+    ROOT / ".claude/rules/routing.md",
+]
+
+REQUIRED_COMMAND_FILES = [
+    ROOT / ".claude/commands/status.md",
+    ROOT / ".claude/commands/gate.md",
+    ROOT / ".claude/commands/recover.md",
+    ROOT / ".claude/commands/validate.md",
+    ROOT / ".claude/commands/next.md",
 ]
 
 REQUIRED_TEMPLATE_FILES = [
@@ -72,11 +88,14 @@ REQUIRED_HOOK_FILES = [
     ROOT / "hooks/check-destructive.sh",
     ROOT / "hooks/check-tdd.sh",
     ROOT / "hooks/post-bash.sh",
+    ROOT / "hooks/post-status-audit.sh",
+    ROOT / "hooks/lib/extract-input.sh",
 ]
 
 REQUIRED_EXAMPLE_FILES = [
     ROOT / "examples/minimal-project/CLAUDE.md",
     ROOT / "examples/minimal-project/README.md",
+    ROOT / "examples/minimal-project/.claude/settings.json",
     ROOT / "examples/minimal-project/docs/STATUS.md",
     ROOT / "examples/minimal-project/docs/LEARNINGS.md",
     ROOT / "examples/minimal-project/docs/requirements/PRD.md",
@@ -93,7 +112,42 @@ REQUIRED_EXAMPLE_FILES = [
     ROOT / "examples/minimal-project/docs/qa-reports/search-security.md",
     ROOT / "examples/minimal-project/docs/qa-reports/search-verification.md",
     ROOT / "examples/minimal-project/docs/qa-reports/search-deploy-checklist.md",
+    # Native .claude structures (Phase 2 v0.6.0)
+    ROOT / "examples/minimal-project/.claude/rules/state-machine.md",
+    ROOT / "examples/minimal-project/.claude/rules/routing.md",
+    ROOT / "examples/minimal-project/.claude/commands/status.md",
+    ROOT / "examples/minimal-project/.claude/commands/gate.md",
+    ROOT / "examples/minimal-project/.claude/commands/next.md",
+    ROOT / "examples/minimal-project/.claude/commands/recover.md",
+    ROOT / "examples/minimal-project/.claude/commands/validate.md",
+    ROOT / "examples/minimal-project/.claude/agents/planner.md",
+    ROOT / "examples/minimal-project/.claude/agents/implementer.md",
+    ROOT / "examples/minimal-project/.claude/agents/reviewer.md",
+    ROOT / "examples/minimal-project/.claude/agents/qa.md",
+    ROOT / "examples/minimal-project/.claude/agents/security.md",
+    ROOT / "examples/minimal-project/.claude/agents/ui.md",
+    ROOT / "examples/minimal-project/.claude/agents/reviewer-testing.md",
+    ROOT / "examples/minimal-project/.claude/agents/reviewer-performance.md",
+    ROOT / "examples/minimal-project/.claude/agents/reviewer-maintainability.md",
+    ROOT / "examples/minimal-project/scripts/update-gate.sh",
+    # Runtime enforcement hooks (referenced by .claude/settings.json)
+    ROOT / "examples/minimal-project/hooks/session-start.sh",
+    ROOT / "examples/minimal-project/hooks/check-gate.sh",
+    ROOT / "examples/minimal-project/hooks/check-destructive.sh",
+    ROOT / "examples/minimal-project/hooks/check-tdd.sh",
+    ROOT / "examples/minimal-project/hooks/post-bash.sh",
+    ROOT / "examples/minimal-project/hooks/post-status-audit.sh",
+    ROOT / "examples/minimal-project/hooks/lib/extract-input.sh",
 ]
+
+# Example skill directories — check SKILL.md exists in each.
+REQUIRED_EXAMPLE_SKILL_DIRS = [
+    "brainstorming", "bug-diagnosis", "client-workflow", "deploy",
+    "session-recovery", "ship-and-docs", "subagent-dev", "tdd",
+]
+
+# Legacy skill files that should NOT exist (migrated to .claude/skills/ in v0.6.0).
+LEGACY_SKILL_DIR = ROOT / "docs/skills"
 
 REQUIRED_CLAUDE_HEADINGS = [
     "## Operating Contract",
@@ -113,12 +167,13 @@ MAX_CLAUDE_WORDS = 650
 
 # Template placeholder pattern: <記入>, <topic>, <docs/requirements/ のパス>, etc.
 # Matches angle-bracket tokens that look like fill-in markers.
-PLACEHOLDER_PATTERN = re.compile(r"<[A-Za-z\u3000-\u9FFF/\s\-\.,:\d_]{1,40}>")
+PLACEHOLDER_PATTERN = re.compile(r"<[A-Za-z\u3000-\u9FFF/ \-\.,:\d_]{1,40}>")
 
 # Placeholders that are legitimate in example files (not fill-in markers).
 PLACEHOLDER_ALLOWLIST = {
     "<topic>",
     "<パス>",
+    "<gate-name>",
 }
 
 
@@ -133,9 +188,23 @@ def word_count(text: str) -> int:
 def main() -> int:
     failures: list[str] = []
 
-    for path in REQUIRED_FILES + REQUIRED_AGENT_FILES + REQUIRED_SKILL_FILES + REQUIRED_TEMPLATE_FILES + REQUIRED_HOOK_FILES + REQUIRED_EXAMPLE_FILES:
+    for path in REQUIRED_FILES + REQUIRED_AGENT_FILES + REQUIRED_SKILL_FILES + REQUIRED_RULES_FILES + REQUIRED_COMMAND_FILES + REQUIRED_TEMPLATE_FILES + REQUIRED_HOOK_FILES + REQUIRED_EXAMPLE_FILES:
         if not path.exists():
             failures.append(f"missing required file: {path.relative_to(ROOT)}")
+
+    # Detect legacy skill files in docs/skills/ (migrated to .claude/skills/ in v0.6.0).
+    if LEGACY_SKILL_DIR.is_dir():
+        for legacy_file in sorted(LEGACY_SKILL_DIR.glob("*.md")):
+            failures.append(
+                f"legacy skill file found: {legacy_file.relative_to(ROOT)}"
+                " (skills migrated to .claude/skills/ in v0.6.0 — delete this file)"
+            )
+
+    # Example project skill directories must each contain SKILL.md.
+    for skill_name in REQUIRED_EXAMPLE_SKILL_DIRS:
+        skill_file = ROOT / "examples/minimal-project/.claude/skills" / skill_name / "SKILL.md"
+        if not skill_file.exists():
+            failures.append(f"missing example skill: {skill_file.relative_to(ROOT)}")
 
     for path in [
         ROOT / "CLAUDE.md",
@@ -155,12 +224,11 @@ def main() -> int:
             )
         if path.name in {"CLAUDE.template.md", "CLAUDE.md"} and path != ROOT / "CLAUDE.md" and "## Project Overrides" not in text:
             failures.append(f"{path.relative_to(ROOT)} is missing heading: ## Project Overrides")
-        # Project CLAUDE.md variants must not reference docs/skills/ file paths
-        # directly. Skills are conceptual references in project contexts.
-        if path != ROOT / "CLAUDE.md" and "docs/skills/" in text:
+        # No CLAUDE.md variant should reference the old docs/skills/ path.
+        if "docs/skills/" in text:
             failures.append(
-                f"{path.relative_to(ROOT)} contains docs/skills/ file path reference"
-                " (project CLAUDE.md should use skill names, not paths)"
+                f"{path.relative_to(ROOT)} contains legacy docs/skills/ path reference"
+                " (skills are now in .claude/skills/)"
             )
 
     # Template word count limits to prevent bloat.
@@ -251,7 +319,10 @@ def main() -> int:
                 "hooks/check-tdd.sh",
                 "hooks/check-destructive.sh",
             ],
-            "PostToolUse": ["hooks/post-bash.sh"],
+            "PostToolUse": [
+                "hooks/post-bash.sh",
+                "hooks/post-status-audit.sh",
+            ],
         }
         for event, required_commands in REQUIRED_HOOK_REGISTRATIONS.items():
             event_entries = hooks_config.get(event, [])
@@ -368,6 +439,87 @@ def main() -> int:
                 failures.append(f"{rel} missing readOnly: true in frontmatter")
             if "do not use Edit, Write, or Bash commands that modify files" not in text:
                 failures.append(f"{rel} missing read-only boundary rule")
+        # All agents must have enriched frontmatter fields.
+        for field in ["model:", "permissionMode:", "effort:", "color:"]:
+            if field not in frontmatter_section:
+                failures.append(f"{rel} missing {field.rstrip(':')} in frontmatter")
+
+    # Skill SKILL.md validation: name and description required in frontmatter.
+    for path in REQUIRED_SKILL_FILES:
+        if not path.exists() or not path.name.endswith("SKILL.md"):
+            continue
+        text = read_text(path)
+        rel = path.relative_to(ROOT)
+        fm_match = re.match(r"---\s*\n(.*?)\n---", text, re.DOTALL)
+        if not fm_match:
+            failures.append(f"{rel} missing YAML frontmatter")
+            continue
+        fm = fm_match.group(1)
+        for field in ["name:", "description:"]:
+            if field not in fm:
+                failures.append(f"{rel} missing {field.rstrip(':')} in frontmatter")
+
+    # Command frontmatter validation: description and allowed-tools required.
+    for path in REQUIRED_COMMAND_FILES:
+        if not path.exists():
+            continue
+        text = read_text(path)
+        rel = path.relative_to(ROOT)
+        fm_match = re.match(r"---\s*\n(.*?)\n---", text, re.DOTALL)
+        if not fm_match:
+            failures.append(f"{rel} missing YAML frontmatter")
+            continue
+        fm = fm_match.group(1)
+        for field in ["description:", "allowed-tools:"]:
+            if field not in fm:
+                failures.append(f"{rel} missing {field.rstrip(':')} in frontmatter")
+
+    # Example settings.json → hooks integrity: every hook command referenced in
+    # settings.json must have its script file present in the example project.
+    example_settings_path = ROOT / "examples/minimal-project/.claude/settings.json"
+    if example_settings_path.exists():
+        try:
+            example_settings = json.loads(read_text(example_settings_path))
+        except json.JSONDecodeError as e:
+            failures.append(f"example settings.json is not valid JSON: {e}")
+            example_settings = {}
+        example_hooks = example_settings.get("hooks", {}) if isinstance(example_settings, dict) else {}
+        for event, entries in example_hooks.items():
+            if not isinstance(entries, list):
+                continue
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    continue
+                for hook in entry.get("hooks", []):
+                    if not isinstance(hook, dict):
+                        continue
+                    cmd = hook.get("command", "")
+                    if not isinstance(cmd, str) or not cmd:
+                        continue
+                    # Extract script path from command (e.g. "bash hooks/foo.sh" → "hooks/foo.sh")
+                    parts = cmd.split()
+                    script_rel = parts[1] if len(parts) >= 2 and parts[0] == "bash" else parts[0]
+                    script_path = ROOT / "examples/minimal-project" / script_rel
+                    if not script_path.exists():
+                        failures.append(
+                            f"example settings.json references missing hook: {script_rel}"
+                            f" (event: {event})"
+                        )
+
+    # Version sync: STATUS.md template and FRAMEWORK_VERSION constant must agree.
+    status_template_path = ROOT / "templates/STATUS.template.md"
+    if status_template_path.exists():
+        st_text = read_text(status_template_path)
+        version_match = re.search(r'framework_version:\s*"([^"]+)"', st_text)
+        if version_match:
+            tpl_ver = version_match.group(1)
+            if tpl_ver != FRAMEWORK_VERSION:
+                failures.append(
+                    f"templates/STATUS.template.md version ({tpl_ver}) != "
+                    f"FRAMEWORK_VERSION ({FRAMEWORK_VERSION})"
+                )
+        else:
+            failures.append("templates/STATUS.template.md missing framework_version")
 
     # Check example project files for leftover template placeholders.
     for path in REQUIRED_EXAMPLE_FILES:

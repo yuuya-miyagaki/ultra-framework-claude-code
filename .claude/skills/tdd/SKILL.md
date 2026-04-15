@@ -1,3 +1,10 @@
+---
+name: tdd
+description: "Test-driven development rules and RED-GREEN-REFACTOR cycle. Used in implement phase."
+disable-model-invocation: true
+user-invocable: false
+---
+
 # テスト駆動開発 (TDD)
 
 > テストを先に書く。失敗を確認する。最小限のコードで通す。

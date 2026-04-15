@@ -1,3 +1,10 @@
+---
+name: subagent-dev
+description: "Subagent-driven development process with task delegation and 2-stage review."
+disable-model-invocation: true
+user-invocable: false
+---
+
 # サブエージェント駆動開発
 
 > タスクごとにフレッシュなサブエージェントを起動し、2 段階レビューで品質を保証する。

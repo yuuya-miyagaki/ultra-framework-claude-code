@@ -1,3 +1,10 @@
+---
+name: deploy
+description: "Deployment orchestration with security gates. Used in deploy phase."
+disable-model-invocation: true
+user-invocable: false
+---
+
 # Deploy Skill
 
 ## Overview
@@ -41,7 +48,7 @@ PLAN の Deploy Target セクションを再読し、以下を確認する:
 
 ## プラットフォーム別チェックリスト
 
-プラットフォーム固有の手順は `docs/skills/deploy-platforms.md` を参照。
+プラットフォーム固有の手順は `.claude/skills/deploy/platforms.md` を参照。
 
 ## staging / uat
 
@@ -63,7 +70,7 @@ PLAN の Deploy Target セクションを再読し、以下を確認する:
 
 ## トラブルシューティング
 
-トラブルシューティングの詳細は `docs/skills/deploy-platforms.md` を参照。
+トラブルシューティングの詳細は `.claude/skills/deploy/platforms.md` を参照。
 
 ## Deploy と Failure Rule の関係
 

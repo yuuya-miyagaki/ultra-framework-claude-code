@@ -1,3 +1,10 @@
+---
+name: bug-diagnosis
+description: "Bug diagnosis process replacing brainstorm+plan for bugfix/hotfix tasks."
+disable-model-invocation: true
+user-invocable: false
+---
+
 # バグ診断
 
 > バグ修正の前に、問題を正確に理解する。

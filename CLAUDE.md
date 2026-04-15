@@ -23,53 +23,15 @@
 
 ## State Machine
 
-- Modes: `Client`, `Dev`
-- Client phases: `onboard -> discovery -> requirements -> scope -> acceptance -> handover`
-- Dev phases: `brainstorm -> plan -> implement -> review -> qa -> security -> deploy -> ship -> docs`
-
-Mode gates:
-
-- `client_ready_for_dev`: required before entering `Dev`
-- `dev_ready_for_client`: required before handing back to `Client`
-
-In `Client`, load `docs/skills/client-workflow.md`.
-Only `client_ready_for_dev` moves work to `Dev`.
-
-Before `brainstorm`, reread `docs/STATUS.md`, confirm refs, and restate
-objective, blockers, and next action. Required; not a phase.
-
-`deploy`/`ship`/`docs` details live in their respective skills.
-
-Iteration: after `dev_ready_for_client`, new task resets to `brainstorm`,
-clears dev gates to `pending`, sets non-requirements refs to null,
-increments `iteration`, keeps `current_refs.requirements`.
-
-Phase transition: get approval → update gates/refs → update phase/next_action → invoke next route.
-
-Phase gates:
-
-- Do not enter a phase before its prior gate is approved.
-  Task size routing overrides: skipped phases exempt their gates.
-- Do not write production code before a failing test exists.
-- Do not claim completion before the required evidence exists.
-
-| type | required gates | S (1 file) | M (2-5) | L (6+) |
-|------|---------------|------------|---------|--------|
-| feature/refactor/framework | review+qa+security+deploy | impl→review→ship | skip deploy | all |
-| bugfix | review; brainstorm+plan=n/a (bug-diagnosis) | same | same | same |
-| hotfix | review preferred; brainstorm+plan=n/a (bug-diagnosis simplified) | same | same | same |
+Modes: `Client`, `Dev`. Hard gates control transitions.
+Client: onboard→discovery→requirements→scope→acceptance→handover
+Dev: brainstorm→plan→implement→review→qa→security→deploy→ship→docs
+Details in `.claude/rules/state-machine.md`.
 
 ## Routing
 
-- `brainstorm`: main context (requires user dialogue).
-- `planner`: design notes and plans.
-- `implementer`: code and test changes.
-- `reviewer`: fresh-context review. `qa`: validation and QA reports.
-- `security`: security review. `ui`: UI/UX-heavy work only.
-
-- Use `reviewer-testing`/`reviewer-performance`/`reviewer-maintainability` as
-  parallel specialists when diff-scope warrants.
-- Default: subagents only when they make work clearer, safer, or smaller.
+Subagents only when they make work clearer, safer, or smaller.
+Details in `.claude/rules/routing.md`.
 
 ## Context Budget Policy
 
@@ -80,17 +42,10 @@ L0 `CLAUDE.md`+`STATUS.md` (always-on), L1 phase refs, L2 task files, L3 on-dema
 
 ## Skills
 
-- brainstorming
-- bug-diagnosis
-- test-driven-development
-- subagent-development
-- deploy
-- client-workflow
-- session-recovery
-- ship-and-docs
+Skills live in `.claude/skills/`. Load for the current phase only.
 
-Load skills for the current phase or recovery only.
-Do not preload.
+- brainstorming, bug-diagnosis, tdd, subagent-dev
+- deploy, client-workflow, session-recovery, ship-and-docs
 
 ## Source of Truth
 
@@ -99,7 +54,7 @@ Do not preload.
 - Requirements: `docs/requirements/*`
 - Design and plans: `docs/specs/*`, `docs/plans/*`
 - Review, QA, and security evidence: `docs/qa-reports/*`
-- Skills: `docs/skills/*`
+- Skills: `.claude/skills/*`
 - Actual behavior: code, tests, and command output
 
 ## Completion Rule

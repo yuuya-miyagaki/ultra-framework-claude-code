@@ -199,8 +199,14 @@ def extract_session_history(frontmatter: str) -> list[dict[str, str]]:
     for raw_line in frontmatter.splitlines():
         line = raw_line.rstrip()
         if not in_block:
-            if re.match(r"^session_history:\s*$", line):
-                in_block = True
+            # Handle both block form and inline empty list.
+            header = re.match(r"^session_history:\s*(.*)$", line)
+            if header:
+                inline = header.group(1).strip()
+                if inline == "[]":
+                    return []  # Empty list is valid.
+                if inline == "":
+                    in_block = True
             continue
 
         if not line.strip():
@@ -341,6 +347,11 @@ def validate_status_file(path: Path) -> list[str]:
                 failures.append(
                     f"{path} phase '{phase}' is not allowed for task_size '{task_size}'"
                 )
+        elif mode == "Client":
+            failures.append(
+                f"{path} WARNING: task_size '{task_size}' is set in Client mode "
+                "(task_size only applies to Dev phases)"
+            )
 
     approvals = extract_approval_map(frontmatter)
     for key in REQUIRED_APPROVAL_KEYS:
@@ -486,14 +497,63 @@ def validate_status_file(path: Path) -> list[str]:
     return failures
 
 
+def validate_with_pyyaml(text: str, path: Path) -> list[str]:
+    """Optional strict validation using PyYAML for cross-checking."""
+    try:
+        import yaml
+    except ImportError:
+        return [f"--strict requires PyYAML: pip install pyyaml"]
+
+    failures: list[str] = []
+    fm = extract_frontmatter(text)
+    if fm is None:
+        return [f"{path} missing frontmatter for PyYAML cross-check"]
+
+    try:
+        parsed = yaml.safe_load(fm)
+    except yaml.YAMLError as e:
+        return [f"{path} PyYAML parse error: {e}"]
+
+    if not isinstance(parsed, dict):
+        return [f"{path} PyYAML parsed frontmatter is not a dict"]
+
+    # Cross-check key fields.
+    regex_mode = extract_scalar_value(fm, "mode")
+    yaml_mode = parsed.get("mode")
+    if regex_mode != str(yaml_mode):
+        failures.append(f"{path} mode mismatch: regex={regex_mode!r}, PyYAML={yaml_mode!r}")
+
+    regex_phase = extract_scalar_value(fm, "phase")
+    yaml_phase = parsed.get("phase")
+    if regex_phase != str(yaml_phase):
+        failures.append(f"{path} phase mismatch: regex={regex_phase!r}, PyYAML={yaml_phase!r}")
+
+    regex_approvals = extract_approval_map(fm)
+    yaml_approvals = parsed.get("gate_approvals", {})
+    if isinstance(yaml_approvals, dict):
+        for key in REQUIRED_APPROVAL_KEYS:
+            rv = regex_approvals.get(key)
+            yv = yaml_approvals.get(key)
+            if rv != str(yv) if yv is not None else rv != yv:
+                failures.append(f"{path} gate {key} mismatch: regex={rv!r}, PyYAML={yv!r}")
+
+    return failures
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", default=".", help="Project root containing docs/STATUS.md")
+    parser.add_argument("--strict", action="store_true",
+                        help="Enable PyYAML cross-validation (requires PyYAML)")
     args = parser.parse_args()
 
     root = Path(args.root).resolve()
     status_path = root / "docs" / "STATUS.md"
     failures = validate_status_file(status_path)
+
+    if args.strict and status_path.exists():
+        text = read_text(status_path)
+        failures.extend(validate_with_pyyaml(text, status_path))
 
     if failures:
         for failure in failures:

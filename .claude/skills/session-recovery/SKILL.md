@@ -1,3 +1,10 @@
+---
+name: session-recovery
+description: "Session recovery protocol for context loss, crashes, or work resumption."
+disable-model-invocation: true
+user-invocable: true
+---
+
 # セッション復帰
 
 > コンテキスト切れ・クラッシュ・日をまたいだ作業再開時に、最小コストで状態を復元する。
