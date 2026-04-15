@@ -33,26 +33,16 @@ color: cyan
 
 ## Browser QA (when ui_surface: true)
 
-When `STATUS.md` has `ui_surface: true`, additionally perform:
+When `STATUS.md` has `ui_surface: true`, delegate browser verification
+to the `qa-browser` agent. Include in the delegation:
 
-- page render check (Playwright MCP snapshot)
-- console error check (browser_console_messages)
-- network 4xx/5xx check (browser_network_requests)
-- key interaction verification
+- which pages/states to verify
+- specific interactions to test
+- expected console/network behavior
 
-This agent is readOnly and cannot call Playwright MCP tools directly.
-Return a structured browser QA checklist in the QA report with pass/fail/skipped
-for each item above. When screenshot evidence is needed, include an explicit
-request block at the end of the report:
-
-```
-## Orchestrator Action Required
-- [ ] Capture screenshot of {page or state description} via Playwright MCP (browser_take_screenshot)
-- [ ] Attach screenshot path to this QA report
-```
-
-The orchestrator is responsible for executing these Playwright calls and
-appending the evidence to the report.
+The qa-browser agent returns structured evidence (pass/fail results,
+screenshot paths, error listings) but does not write files.
+Incorporate the returned evidence into the QA report yourself.
 
 ## Boundaries
 

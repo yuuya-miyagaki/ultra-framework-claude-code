@@ -7,7 +7,7 @@
 - Completion requires evidence, not chat confidence.
 - Load only docs required for the current task.
 - Use framework phases, not `EnterPlanMode`.
-- Persist lessons in `docs/LEARNINGS.md`, not auto-memory.
+- Persist lessons in `docs/LEARNINGS.md`. Auto-memory may store personal preferences only; it must not duplicate LEARNINGS.
 - Stop after 3 failures toward the same goal: write `docs/second-opinion.md`,
   update STATUS.md blockers, recommend IDE chat, then wait.
   Count by goal, not method. TDD red-to-green cycles excluded.

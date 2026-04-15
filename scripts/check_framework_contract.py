@@ -28,6 +28,7 @@ REQUIRED_AGENT_FILES = [
     ROOT / ".claude/agents/implementer.md",
     ROOT / ".claude/agents/reviewer.md",
     ROOT / ".claude/agents/qa.md",
+    ROOT / ".claude/agents/qa-browser.md",
     ROOT / ".claude/agents/security.md",
     ROOT / ".claude/agents/ui.md",
     ROOT / ".claude/agents/reviewer-testing.md",
@@ -89,6 +90,7 @@ REQUIRED_HOOK_FILES = [
     ROOT / "hooks/check-tdd.sh",
     ROOT / "hooks/post-bash.sh",
     ROOT / "hooks/post-status-audit.sh",
+    ROOT / "hooks/pre-compact.sh",
     ROOT / "hooks/lib/extract-input.sh",
 ]
 
@@ -124,6 +126,7 @@ REQUIRED_EXAMPLE_FILES = [
     ROOT / "examples/minimal-project/.claude/agents/implementer.md",
     ROOT / "examples/minimal-project/.claude/agents/reviewer.md",
     ROOT / "examples/minimal-project/.claude/agents/qa.md",
+    ROOT / "examples/minimal-project/.claude/agents/qa-browser.md",
     ROOT / "examples/minimal-project/.claude/agents/security.md",
     ROOT / "examples/minimal-project/.claude/agents/ui.md",
     ROOT / "examples/minimal-project/.claude/agents/reviewer-testing.md",
@@ -137,6 +140,7 @@ REQUIRED_EXAMPLE_FILES = [
     ROOT / "examples/minimal-project/hooks/check-tdd.sh",
     ROOT / "examples/minimal-project/hooks/post-bash.sh",
     ROOT / "examples/minimal-project/hooks/post-status-audit.sh",
+    ROOT / "examples/minimal-project/hooks/pre-compact.sh",
     ROOT / "examples/minimal-project/hooks/lib/extract-input.sh",
 ]
 
@@ -322,6 +326,9 @@ def main() -> int:
             "PostToolUse": [
                 "hooks/post-bash.sh",
                 "hooks/post-status-audit.sh",
+            ],
+            "PreCompact": [
+                "hooks/pre-compact.sh",
             ],
         }
         for event, required_commands in REQUIRED_HOOK_REGISTRATIONS.items():

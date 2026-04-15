@@ -5,6 +5,7 @@
 - `implementer`: code and test changes.
 - `reviewer`: fresh-context review. `qa`: validation and QA reports.
 - `security`: security review. `ui`: UI/UX-heavy work only.
+- `qa-browser`: browser-based QA verification (delegated by qa agent).
 
 - Use `reviewer-testing`/`reviewer-performance`/`reviewer-maintainability` as
   parallel specialists when diff-scope warrants.

@@ -96,6 +96,7 @@ pull-based loading). Project CLAUDE.md references skills by name.
 - **PreToolUse (Bash)**: warns before destructive commands
 - **PostToolUse (Bash)**: captures exit codes and error context
 - **PostToolUse (Edit/Write)**: detects unauthorized gate tampering in STATUS.md
+- **PreCompact**: warns before context compaction with current mode/phase/next-action
 
 ## Validation
 
