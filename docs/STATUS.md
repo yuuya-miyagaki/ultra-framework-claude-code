@@ -1,6 +1,6 @@
 ---
 framework: ultra-framework-claude-code
-framework_version: "0.7.0"
+framework_version: "0.7.1"
 project_name: "Ultra Framework Claude Code"
 mode: Dev
 phase: docs
@@ -40,7 +40,7 @@ external_evidence:
     scope: "v0.6.0 validator深度+報告資料"
     findings: "P2x1 (command/settings意味的整合未検証), P3x1 (報告書+STATUS追随不足)"
     resolution: "command frontmatter検証+settings→hooks整合チェック追加、報告書+STATUS更新"
-next_action: "v0.7.1 ネイティブ機能改善完了。PreCompact フック、qa-browser分離、auto-memory緩和。コミット待ち。"
+next_action: "v0.7.1 release finalization 完了。version bump、README修正、改善報告書、持ち越し課題修正。コミット待ち。"
 blockers: []
 session_history:
   - date: "2026-04-15"
@@ -59,9 +59,10 @@ session_history:
 
 ## Summary
 
-Claude Code ネイティブの Ultra Framework 運用フレームワーク。v0.7.0 では
-STATUS.md スキーマ拡張（failure_tracking, task_size_rationale）、
-session_history/external_evidence アーカイブ（MAX 3件制限）を実施。
+Claude Code ネイティブの Ultra Framework 運用フレームワーク。v0.7.1 では
+PreCompact フック（STATUS.md 鮮度チェック+コンパクション阻止）、
+qa-browser エージェント分離（disallowedTools による安全な Playwright アクセス）、
+auto-memory ポリシー緩和（個人設定のみ許可）を実施。
 
 主要な構成:
 

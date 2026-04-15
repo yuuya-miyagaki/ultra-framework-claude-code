@@ -44,4 +44,7 @@ Phase transition suggestions:
 If `session_history` or `external_evidence` has 3 entries (the max), suggest
 archiving older entries before adding new ones.
 
+If the body `## Session History` section has 10 or more bullet entries,
+suggest consolidating or trimming older entries to keep the file concise.
+
 Do not modify any files. Suggest only.

@@ -32,7 +32,7 @@ It removes the parts that add overhead in Claude Code:
 ultra-framework-claude-code/
 ├── CLAUDE.md                    # control kernel (~320 words)
 ├── .claude/
-│   ├── agents/                  # 9 bounded specialist roles
+│   ├── agents/                  # 10 bounded specialist roles
 │   ├── commands/                # slash commands (/status, /gate, etc.)
 │   ├── rules/                   # always-loaded rules (state-machine, routing)
 │   └── skills/                  # pull-based skill documents
@@ -96,7 +96,7 @@ pull-based loading). Project CLAUDE.md references skills by name.
 - **PreToolUse (Bash)**: warns before destructive commands
 - **PostToolUse (Bash)**: captures exit codes and error context
 - **PostToolUse (Edit/Write)**: detects unauthorized gate tampering in STATUS.md
-- **PreCompact**: warns before context compaction with current mode/phase/next-action
+- **PreCompact**: blocks compaction when STATUS.md is stale (not updated within 5 min during active phase); allows with context summary when current
 
 ## Validation
 
@@ -116,6 +116,23 @@ python3 scripts/check_status.py --root . --strict
 ```
 
 ## Migration
+
+### From v0.7.0 to v0.7.1
+
+1. **PreCompact hook added**: `hooks/pre-compact.sh` blocks compaction when
+   STATUS.md is stale (not updated within 5 min during active phase);
+   register `PreCompact` in your hooks settings
+2. **qa-browser agent added**: `.claude/agents/qa-browser.md` provides safe
+   Playwright MCP access via `disallowedTools` (Edit/Write/NotebookEdit/Bash denied);
+   update routing rules to include `qa-browser`
+3. **QA agent updated**: browser QA section now delegates to qa-browser
+   instead of the "Orchestrator Action Required" handoff
+4. **Auto-memory policy relaxed**: CLAUDE.md now permits auto-memory for
+   personal preferences (LEARNINGS.md remains primary for technical lessons)
+5. **external\_evidence.type lint**: validator now warns on non-kebab-case type values
+6. **`/next` enhanced**: suggests trimming body Session History when entries exceed 10
+7. **subagent-dev TaskCreate clarified**: TaskCreate usage scoped to
+   session-local subtask management only
 
 ### From v0.6.0 to v0.7.0
 

@@ -549,6 +549,13 @@ def validate_status_file(path: Path) -> list[str]:
             failures.append(
                 f"{path} external_evidence entry {index} has unknown field: {field}"
             )
+        # WARNING (not FAIL): recommend kebab-case type naming convention.
+        ev_type = entry.get("type", "")
+        if ev_type and not re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", ev_type):
+            print(
+                f"WARNING: {path} external_evidence entry {index} type '{ev_type}' "
+                "does not follow kebab-case convention (e.g. 'codex-review-v071-1')"
+            )
 
     # Validate failure_tracking (optional field).
     if has_top_level_key(frontmatter, "failure_tracking"):

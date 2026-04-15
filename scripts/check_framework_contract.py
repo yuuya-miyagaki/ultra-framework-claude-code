@@ -11,7 +11,7 @@ from check_status import validate_status_file
 
 ROOT = Path(__file__).resolve().parents[1]
 
-FRAMEWORK_VERSION = "0.7.0"
+FRAMEWORK_VERSION = "0.7.1"
 
 REQUIRED_FILES = [
     ROOT / "README.md",
