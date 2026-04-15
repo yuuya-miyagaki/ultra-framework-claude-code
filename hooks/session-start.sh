@@ -89,13 +89,13 @@ case "$PHASE" in
     HINT="skill: brainstorming / TDD必須 / エビデンスなき完了なし"
     ;;
   plan)
-    HINT="skill: subagent-development(計画) / Boundary Map必須 / TDD必須"
+    HINT="skill: subagent-dev(計画) / Boundary Map必須 / TDD必須"
     ;;
   implement)
-    HINT="skill: subagent-development / TDD必須: テストを先に書け / エビデンスなき完了なし"
+    HINT="skill: subagent-dev / TDD必須: テストを先に書け / エビデンスなき完了なし"
     ;;
   review)
-    HINT="skill: subagent-development(レビュー) / Review Army: diff-scope分析でspecialist起動"
+    HINT="skill: subagent-dev(レビュー) / Review Army: diff-scope分析でspecialist起動"
     ;;
   qa)
     HINT="エビデンスなき完了なし / 再現・検証を実行せよ"

@@ -11,7 +11,7 @@ from check_status import validate_status_file
 
 ROOT = Path(__file__).resolve().parents[1]
 
-FRAMEWORK_VERSION = "0.7.1"
+FRAMEWORK_VERSION = "0.7.2"
 
 REQUIRED_FILES = [
     ROOT / "README.md",
@@ -91,6 +91,7 @@ REQUIRED_HOOK_FILES = [
     ROOT / "hooks/post-bash.sh",
     ROOT / "hooks/post-status-audit.sh",
     ROOT / "hooks/pre-compact.sh",
+    ROOT / "hooks/check-control-plane.sh",
     ROOT / "hooks/lib/extract-input.sh",
 ]
 
@@ -133,6 +134,7 @@ REQUIRED_EXAMPLE_FILES = [
     ROOT / "examples/minimal-project/.claude/agents/reviewer-performance.md",
     ROOT / "examples/minimal-project/.claude/agents/reviewer-maintainability.md",
     ROOT / "examples/minimal-project/scripts/update-gate.sh",
+    ROOT / "examples/minimal-project/scripts/check_status.py",
     # Runtime enforcement hooks (referenced by .claude/settings.json)
     ROOT / "examples/minimal-project/hooks/session-start.sh",
     ROOT / "examples/minimal-project/hooks/check-gate.sh",
@@ -141,6 +143,7 @@ REQUIRED_EXAMPLE_FILES = [
     ROOT / "examples/minimal-project/hooks/post-bash.sh",
     ROOT / "examples/minimal-project/hooks/post-status-audit.sh",
     ROOT / "examples/minimal-project/hooks/pre-compact.sh",
+    ROOT / "examples/minimal-project/hooks/check-control-plane.sh",
     ROOT / "examples/minimal-project/hooks/lib/extract-input.sh",
 ]
 
@@ -178,6 +181,10 @@ PLACEHOLDER_ALLOWLIST = {
     "<topic>",
     "<パス>",
     "<gate-name>",
+    # Python source code tokens (docstrings/comments in check_status.py etc.)
+    "<body>",
+    "<key>",
+    "<value>",
 }
 
 
@@ -321,6 +328,7 @@ def main() -> int:
             "PreToolUse": [
                 "hooks/check-gate.sh",
                 "hooks/check-tdd.sh",
+                "hooks/check-control-plane.sh",
                 "hooks/check-destructive.sh",
             ],
             "PostToolUse": [

@@ -1,5 +1,5 @@
 # 検証チェックリスト
-<!-- 正本: test-driven-development skill -->
+<!-- 正本: tdd skill -->
 
 > implementer / orchestrator が QA 前に行う自己検証。QA レポートの代替ではない。
 
@@ -11,7 +11,7 @@
 
 ## TDD 検証
 
-TDD 準拠は `test-driven-development` スキルの検証チェックリストに従う。
+TDD 準拠は `tdd` スキルの検証チェックリストに従う。
 
 ## 仕様準拠・コード品質
 

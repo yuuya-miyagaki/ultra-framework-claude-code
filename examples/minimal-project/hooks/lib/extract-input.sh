@@ -2,13 +2,18 @@
 # Shared input extraction library for Ultra Framework hooks.
 # Source this file: source "$(dirname "$0")/lib/extract-input.sh"
 
-# Extract file_path from Edit/Write tool_input JSON.
+# Extract file_path from Edit/Write/NotebookEdit tool_input JSON.
 extract_file_path() {
   local input="$1"
   local result
+  # Try file_path first (Edit/Write).
   result=$(printf '%s' "$input" | grep -o '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*:[[:space:]]*"//;s/"$//' || true)
+  # Fallback: try notebook_path (NotebookEdit).
   if [ -z "$result" ]; then
-    result=$(printf '%s' "$input" | python3 -c 'import sys,json; print(json.loads(sys.stdin.read()).get("tool_input",{}).get("file_path",""))' 2>/dev/null || true)
+    result=$(printf '%s' "$input" | grep -o '"notebook_path"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*:[[:space:]]*"//;s/"$//' || true)
+  fi
+  if [ -z "$result" ]; then
+    result=$(printf '%s' "$input" | python3 -c 'import sys,json; d=json.loads(sys.stdin.read()).get("tool_input",{}); print(d.get("file_path","") or d.get("notebook_path",""))' 2>/dev/null || true)
   fi
   printf '%s' "$result"
 }

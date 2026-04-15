@@ -1,20 +1,14 @@
 ---
-description: Run framework validators (contract + status checks)
+description: Run project validator (status check)
 allowed-tools: Bash, Read
 ---
 
 # /validate
 
-Run both framework validators and report results.
+Run the project status validator.
 
 ```bash
-python3 scripts/check_framework_contract.py
 python3 scripts/check_status.py --root .
 ```
 
-If an `examples/minimal-project/` directory exists, also run:
-```bash
-python3 scripts/check_status.py --root examples/minimal-project
-```
-
-Report each validator result (PASS/FAIL) and list any failures.
+Report the validator result (PASS/FAIL) and list any failures.

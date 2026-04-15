@@ -1,6 +1,6 @@
 ---
 framework: ultra-framework-claude-code
-framework_version: "0.7.1"
+framework_version: "0.7.2"
 project_name: "Ultra Framework Claude Code"
 mode: Dev
 phase: docs
@@ -40,13 +40,9 @@ external_evidence:
     scope: "v0.6.0 validator深度+報告資料"
     findings: "P2x1 (command/settings意味的整合未検証), P3x1 (報告書+STATUS追随不足)"
     resolution: "command frontmatter検証+settings→hooks整合チェック追加、報告書+STATUS更新"
-next_action: "v0.7.1 release finalization 完了。version bump、README修正、改善報告書、持ち越し課題修正。コミット待ち。"
+next_action: "v0.7.2 実装完了。全バリデータ PASS。コミット待ち。"
 blockers: []
 session_history:
-  - date: "2026-04-15"
-    mode: Dev
-    phase: "implement"
-    note: "v0.7.0 Phase A+B実装。P1/P2修正、failure_tracking、task_size_rationale、アーカイブ制限(MAX 3)。Codexレビュー反映。"
   - date: "2026-04-15"
     mode: Dev
     phase: "docs"
@@ -54,22 +50,26 @@ session_history:
   - date: "2026-04-15"
     mode: Dev
     phase: "implement"
-    note: "v0.7.1 ネイティブ機能改善。PreCompactフック追加、qa-browserエージェント分離、auto-memoryポリシー緩和。Codexレビュー反映。"
+    note: "v0.7.1 ネイティブ機能改善。PreCompactフック追加、qa-browserエージェント分離、auto-memoryポリシー緩和。Codexレビュー3ラウンド反映。"
+  - date: "2026-04-15"
+    mode: Dev
+    phase: "implement"
+    note: "v0.7.2 scaffold自己完結性+信頼境界ハードニング。/validate分離、NotebookEditマッチャー追加、check-control-plane.sh新規、参照名ドリフト修正。"
 ---
 
 ## Summary
 
-Claude Code ネイティブの Ultra Framework 運用フレームワーク。v0.7.1 では
-PreCompact フック（STATUS.md 鮮度チェック+コンパクション阻止）、
-qa-browser エージェント分離（disallowedTools による安全な Playwright アクセス）、
-auto-memory ポリシー緩和（個人設定のみ許可）を実施。
+Claude Code ネイティブの Ultra Framework 運用フレームワーク。v0.7.2 では
+scaffold 自己完結性修正（/validate をプロジェクト用に分離）、
+信頼境界ハードニング（NotebookEdit マッチャー追加 + Bash control plane 保護）、
+テンプレート参照名ドリフト修正を実施。
 
 主要な構成:
 
 - 薄い `CLAUDE.md` 制御カーネル + `.claude/rules/` 分離ルール
 - 明示的な `docs/STATUS.md` 運用スキーマ（failure_tracking, task_size_rationale 追加）
 - 10のサブエージェント（コア6 + specialist 4）
-- 7つのランタイムフック（session-start, check-gate, check-tdd, check-destructive, post-bash, post-status-audit, pre-compact）
+- 8つのランタイムフック（session-start, check-gate, check-tdd, check-control-plane, check-destructive, post-bash, post-status-audit, pre-compact）
 - 8つの `.claude/skills/` ネイティブスキル（pull-based）
 - 5つの Slash Commands（/status, /gate, /recover, /validate, /next）
 - 17のドキュメントテンプレート + バリデータ2本
@@ -78,11 +78,12 @@ current_refs は bootstrap 成果物。外部レビュー証拠は `external_evi
 
 ## Recent Decisions
 
-- PostCompact フックはランタイムスキーマ検証が拒否（settings.json 登録時に "Invalid key in record" エラー）。SessionStart の compact マッチャーが post-compact コンテキスト復元を提供済みのため、PreCompact のみ追加。
-- qa-browser エージェントは readOnly: false + disallowedTools で Playwright MCP アクセスを許可しつつファイル変更を禁止。Bash バイパス対策で Bash も除外。
-- auto-memory は個人設定のみ許可。技術的学習は LEARNINGS.md に一本化を維持。
-- session_history/external_evidence は MAX 3 件。アーカイブ基準は iteration ベースではなく latest N。
-- check_status.py の YAML パーサーは narrow subset 前提。nested/multiline 拡張時は PyYAML 導入を検討。
+- check-control-plane.sh は allowlist 方式。control plane パスを含む Bash コマンドは原則 deny。allowlist は「コマンド全体が許可スクリプトのみ」の場合に限定し、チェーン演算子（;, &&, ||, |, $()）を含むコマンドは allowlist 対象外。task_type=framework 時は全許可。
+- example project に check_status.py を同梱。REQUIRED_EXAMPLE_FILES で存在検証。
+- NotebookEdit は .ipynb 専用ツールだが defense-in-depth として Edit|Write|NotebookEdit マッチャーに追加。extract_file_path() に notebook_path フォールバックを実装。
+- /validate は framework repo 用（両バリデータ実行）と scaffold project 用（check_status.py のみ）を分離。example は check_status.py 同梱で自己完結。
+- テンプレート参照名ドリフト（subagent-development→subagent-dev 等）は v0.6.0 の skills 移行時の更新漏れ。lint 自動化は v0.8.0 で対応。
+- /gate 文脈妥当性チェック、lean/full validator 一本化、STATUS.md 劣化対策は v0.8.0 へ延期。
 
 ## Session History
 

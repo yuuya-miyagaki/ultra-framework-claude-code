@@ -1,5 +1,5 @@
 # 実装計画
-<!-- 正本: subagent-development skill -->
+<!-- 正本: subagent-dev skill -->
 
 ## 目的
 

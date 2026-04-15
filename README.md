@@ -72,7 +72,9 @@ ultra-framework-claude-code/
    the example uses `settings.json` as a committed sample)
 10. Copy `scripts/update-gate.sh` into the project's `scripts/` directory
     (required by the `/gate` command for gate approvals)
-11. Validate the scaffold before use
+11. Copy `scripts/check_status.py` into the project's `scripts/` directory
+    (required by the `/validate` command for status validation)
+12. Validate the scaffold before use
 
 **Skills** (`.claude/skills/`) are loaded by Claude Code natively. Each skill
 has a `SKILL.md` with frontmatter (`disable-model-invocation: true` for
@@ -91,11 +93,12 @@ pull-based loading). Project CLAUDE.md references skills by name.
 **Hooks** (`hooks/`) enforce framework rules at runtime:
 
 - **SessionStart**: injects current mode, phase, blockers; initializes gate snapshot
-- **PreToolUse (Edit/Write)**: blocks code edits when plan gate is not approved;
+- **PreToolUse (Edit/Write/NotebookEdit)**: blocks code edits when plan gate is not approved;
   blocks framework file edits during non-framework tasks
-- **PreToolUse (Bash)**: warns before destructive commands
+- **PreToolUse (Bash)**: denies control plane file writes during non-framework tasks;
+  warns before destructive commands
 - **PostToolUse (Bash)**: captures exit codes and error context
-- **PostToolUse (Edit/Write)**: detects unauthorized gate tampering in STATUS.md
+- **PostToolUse (Edit/Write/NotebookEdit)**: detects unauthorized gate tampering in STATUS.md
 - **PreCompact**: blocks compaction when STATUS.md is stale (not updated within 5 min during active phase); allows with context summary when current
 
 ## Validation
@@ -116,6 +119,22 @@ python3 scripts/check_status.py --root . --strict
 ```
 
 ## Migration
+
+### From v0.7.1 to v0.7.2
+
+1. **check-control-plane.sh added**: new Bash PreToolUse hook that denies
+   control plane file writes (STATUS.md, CLAUDE.md, .claude/, hooks/, scripts/)
+   during non-framework tasks; register in Bash PreToolUse before check-destructive.sh
+2. **NotebookEdit added to matchers**: PreToolUse and PostToolUse matchers
+   expanded from `Edit|Write` to `Edit|Write|NotebookEdit` (defense-in-depth)
+3. **extract\_file\_path notebook\_path fallback**: `hooks/lib/extract-input.sh`
+   now falls back to `notebook_path` when `file_path` is empty (NotebookEdit support)
+4. **Template reference drift fixed**: corrected stale skill/agent names in
+   PLAN, VERIFICATION, DEPLOY-CHECKLIST templates and session-start.sh
+5. **`/validate` scaffold-safe**: example project's `/validate` now runs
+   `check_status.py` only (not `check_framework_contract.py`)
+6. **check\_status.py in Quick Start**: step 11 added for copying the script
+   into scaffolded projects
 
 ### From v0.7.0 to v0.7.1
 
