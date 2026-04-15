@@ -114,9 +114,23 @@ pip install pyyaml
 python3 scripts/check_status.py --root . --strict
 ```
 
-## Migration from v0.5.0
+## Migration
 
-Key changes in v0.6.0:
+### From v0.6.0 to v0.7.0
+
+1. **STATUS.md schema expanded**: add `failure_tracking: null` and
+   `task_size_rationale` fields to frontmatter
+2. **Archive limits enforced**: `session_history` and `external_evidence` capped
+   at 3 entries each; older entries archived to body or `docs/evidence-archive.md`
+3. **Archive file**: create `docs/evidence-archive.md` for overflow evidence
+4. **CLAUDE.md updated**: 3-failure rule now requires writing to
+   `failure_tracking` (goal/count/last_attempt); reset to null on resolution
+5. **Iteration reset**: `state-machine.md` updated — archive external_evidence
+   older than latest 3 on iteration reset
+6. **Skills updated**: brainstorming and bug-diagnosis skills now include
+   `task_size_rationale` recording step
+
+### From v0.5.0 to v0.6.0
 
 1. **Skills moved**: `docs/skills/` → `.claude/skills/*/SKILL.md`
 2. **Rules extracted**: State Machine and Routing moved from CLAUDE.md to `.claude/rules/`

@@ -42,7 +42,9 @@ color: green
 - refer to the preloaded `tdd` skill when in doubt
 - do not claim completion without having used Read, Grep, or Bash to verify
 - 3-failure rule: count attempts per goal cumulatively; method changes do not reset.
-  On 3rd failure, record in STATUS.md, present attempt list and alternatives, defer to user
+  Update STATUS.md `failure_tracking` (goal/count/last_attempt) on each failure.
+  On 3rd failure, write second-opinion.md, present attempt list and alternatives, defer to user.
+  Reset failure_tracking to null when the goal is achieved or changed
 - before declaring completion, re-read the PLAN's Deliverable Checklist and verify all items exist
 - complete within 50 turns; if not possible, summarize progress and return
 

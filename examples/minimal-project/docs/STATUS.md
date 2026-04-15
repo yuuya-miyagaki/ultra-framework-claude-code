@@ -1,11 +1,12 @@
 ---
 framework: ultra-framework-claude-code
-framework_version: "0.6.0"
+framework_version: "0.7.0"
 project_name: "社内ナレッジ検索アシスタント"
 mode: Dev
 phase: docs
 task_type: feature
 task_size: M
+task_size_rationale: "検索UI+結果一覧+出典表示の3コンポーネント、5ファイル以内の変更"
 iteration: 1
 ui_surface: true
 last_updated: "2026-04-10T00:00:00Z"
@@ -33,14 +34,6 @@ current_refs:
 next_action: "TO-CLIENT.md を共有し、Dev 完了を Client に handoff する。"
 blockers: []
 session_history:
-  - date: "2026-04-06"
-    mode: "Client"
-    phase: "handover"
-    note: "要件整理と Dev 引き渡しを完了した。"
-  - date: "2026-04-08"
-    mode: "Dev"
-    phase: "implement"
-    note: "設計、実装計画、実装を完了した。"
   - date: "2026-04-09"
     mode: "Dev"
     phase: "review"
@@ -69,7 +62,7 @@ session_history:
 
 ## Session History
 
-- 2026-04-06: Client artifacts と TO-DEV を確定
-- 2026-04-08: design と implementation plan を承認して実装
+- 2026-04-06: Client/handover — 要件整理と Dev 引き渡しを完了した。
+- 2026-04-08: Dev/implement — 設計、実装計画、実装を完了した。
 - 2026-04-09: review, QA, security を完了
 - 2026-04-10: ship (TO-CLIENT 作成) → docs (LEARNINGS 更新、ゲート申請中)

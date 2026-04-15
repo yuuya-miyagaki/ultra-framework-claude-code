@@ -40,7 +40,19 @@ When `STATUS.md` has `ui_surface: true`, additionally perform:
 - network 4xx/5xx check (browser_network_requests)
 - key interaction verification
 
-Note: screenshot capture is the orchestrator's responsibility (readOnly constraint).
+This agent is readOnly and cannot call Playwright MCP tools directly.
+Return a structured browser QA checklist in the QA report with pass/fail/skipped
+for each item above. When screenshot evidence is needed, include an explicit
+request block at the end of the report:
+
+```
+## Orchestrator Action Required
+- [ ] Capture screenshot of {page or state description} via Playwright MCP (browser_take_screenshot)
+- [ ] Attach screenshot path to this QA report
+```
+
+The orchestrator is responsible for executing these Playwright calls and
+appending the evidence to the report.
 
 ## Boundaries
 

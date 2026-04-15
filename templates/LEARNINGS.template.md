@@ -9,7 +9,7 @@
 ## 技術
 
 <!-- category: tech -->
-<!-- 記入形式: - [confidence:1-10] <教訓の内容> -->
+<!-- 記入形式: - [confidence:1-10] <教訓の内容（1行で書くこと。session-start hookがgrep抽出するため）> -->
 
 - <記入>
 

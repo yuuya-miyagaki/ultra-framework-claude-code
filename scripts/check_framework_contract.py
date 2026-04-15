@@ -11,7 +11,7 @@ from check_status import validate_status_file
 
 ROOT = Path(__file__).resolve().parents[1]
 
-FRAMEWORK_VERSION = "0.6.0"
+FRAMEWORK_VERSION = "0.7.0"
 
 REQUIRED_FILES = [
     ROOT / "README.md",
@@ -520,6 +520,41 @@ def main() -> int:
                 )
         else:
             failures.append("templates/STATUS.template.md missing framework_version")
+
+    # LEARNINGS.md lint: check format and multiline for high-confidence entries.
+    # Only applied to framework repo and example (not enforced on general projects).
+    LEARNINGS_LINT_TARGETS = [
+        ROOT / "docs/LEARNINGS.md",
+        ROOT / "examples/minimal-project/docs/LEARNINGS.md",
+    ]
+    LEARNINGS_ENTRY_PATTERN = re.compile(
+        r"^[^\S\n]*-[^\S\n]*\[confidence:(\d+)\]"
+    )
+    for learnings_path in LEARNINGS_LINT_TARGETS:
+        if not learnings_path.exists():
+            continue
+        lines = read_text(learnings_path).splitlines()
+        rel = learnings_path.relative_to(ROOT)
+        for i, line in enumerate(lines, start=1):
+            m = LEARNINGS_ENTRY_PATTERN.match(line)
+            if not m:
+                continue
+            confidence = int(m.group(1))
+            # Check that ] is followed by a space and content on the same line.
+            if not re.search(r"\]\s+\S", line):
+                failures.append(
+                    f"{rel}:{i} learning entry has no content after [confidence:{confidence}]"
+                )
+            # Check that high-confidence entries (>=8) are single-line.
+            if confidence >= 8 and i < len(lines):
+                next_line = lines[i]  # 0-indexed lines[i] is line i+1
+                if next_line and not next_line.startswith("#") and not next_line.startswith("<!--"):
+                    # Continuation line: starts with whitespace but not a new entry or heading.
+                    if re.match(r"^\s+\S", next_line) and not LEARNINGS_ENTRY_PATTERN.match(next_line):
+                        failures.append(
+                            f"{rel}:{i} high-confidence learning (confidence:{confidence}) "
+                            "spans multiple lines (must be single-line for session-start hook extraction)"
+                        )
 
     # Check example project files for leftover template placeholders.
     for path in REQUIRED_EXAMPLE_FILES:

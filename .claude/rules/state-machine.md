@@ -20,6 +20,7 @@ objective, blockers, and next action. Required; not a phase.
 Iteration: after `dev_ready_for_client`, new task resets to `brainstorm`,
 clears dev gates to `pending`, sets non-requirements refs to null,
 increments `iteration`, keeps `current_refs.requirements`.
+Archive external_evidence older than latest 3 entries to `docs/evidence-archive.md`.
 
 Phase transition: get approval -> update gates/refs -> update phase/next_action -> invoke next route.
 

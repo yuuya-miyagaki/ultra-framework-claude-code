@@ -27,7 +27,7 @@ REQUIRED_TOP_LEVEL_KEYS = [
     "session_history",
 ]
 
-OPTIONAL_TOP_LEVEL_KEYS: set[str] = {"task_size", "iteration", "ui_surface", "external_evidence"}
+OPTIONAL_TOP_LEVEL_KEYS: set[str] = {"task_size", "task_size_rationale", "iteration", "ui_surface", "external_evidence", "failure_tracking"}
 
 REQUIRED_APPROVAL_KEYS = [
     "client_ready_for_dev",
@@ -94,7 +94,8 @@ PHASE_REQUIRES_GATES = {
     "ship": ["brainstorm", "plan", "review", "qa", "security", "deploy"],
     "docs": ["brainstorm", "plan", "review", "qa", "security", "deploy"],
 }
-MAX_SESSION_HISTORY_ENTRIES = 5
+MAX_SESSION_HISTORY_ENTRIES = 3
+MAX_EXTERNAL_EVIDENCE_ENTRIES = 3
 REQUIRED_BODY_HEADINGS = [
     "## Summary",
     "## Recent Decisions",
@@ -231,6 +232,47 @@ def extract_session_history(frontmatter: str) -> list[dict[str, str]]:
     return entries
 
 
+REQUIRED_FAILURE_TRACKING_FIELDS = ["goal", "count", "last_attempt"]
+
+
+def extract_failure_tracking(frontmatter: str) -> dict[str, str] | None:
+    """Extract failure_tracking from frontmatter.
+
+    Expected format:
+        failure_tracking:
+          goal: "description"
+          count: 2
+          last_attempt: "what was tried"
+
+    ``failure_tracking: null`` means no active tracking (returns None).
+    """
+    in_block = False
+    fields: dict[str, str] = {}
+
+    for raw_line in frontmatter.splitlines():
+        line = raw_line.rstrip()
+        if not in_block:
+            header = re.match(r"^failure_tracking:\s*(.*)$", line)
+            if header:
+                inline = header.group(1).strip()
+                if inline == "null" or inline == "":
+                    if inline == "null":
+                        return None
+                    in_block = True
+            continue
+
+        if not line.strip():
+            continue
+        if re.match(r"^\S", line):
+            break
+
+        field_match = re.match(r"^\s{2}([A-Za-z0-9_]+):\s*(.+)$", line)
+        if field_match:
+            fields[field_match.group(1)] = field_match.group(2).strip().strip('"')
+
+    return fields if fields else None
+
+
 REQUIRED_EVIDENCE_FIELDS = ["type", "scope", "findings", "resolution"]
 
 
@@ -351,6 +393,15 @@ def validate_status_file(path: Path) -> list[str]:
             failures.append(
                 f"{path} WARNING: task_size '{task_size}' is set in Client mode "
                 "(task_size only applies to Dev phases)"
+            )
+
+    # WARNING (not FAIL) when task_size is set but rationale is missing.
+    if task_size is not None:
+        rationale = extract_scalar_value(frontmatter, "task_size_rationale")
+        if rationale is None or rationale == "":
+            print(
+                f"WARNING: {path} has task_size '{task_size}' but no task_size_rationale "
+                "(recommended to document sizing justification)"
             )
 
     approvals = extract_approval_map(frontmatter)
@@ -482,6 +533,11 @@ def validate_status_file(path: Path) -> list[str]:
 
     # Validate external_evidence schema (optional field).
     evidence_entries = extract_external_evidence(frontmatter)
+    if len(evidence_entries) > MAX_EXTERNAL_EVIDENCE_ENTRIES:
+        failures.append(
+            f"{path} has too many external_evidence entries: {len(evidence_entries)} > "
+            f"{MAX_EXTERNAL_EVIDENCE_ENTRIES} (archive older entries to docs/evidence-archive.md)"
+        )
     allowed_evidence_fields = set(REQUIRED_EVIDENCE_FIELDS)
     for index, entry in enumerate(evidence_entries, start=1):
         for field in REQUIRED_EVIDENCE_FIELDS:
@@ -493,6 +549,26 @@ def validate_status_file(path: Path) -> list[str]:
             failures.append(
                 f"{path} external_evidence entry {index} has unknown field: {field}"
             )
+
+    # Validate failure_tracking (optional field).
+    if has_top_level_key(frontmatter, "failure_tracking"):
+        ft = extract_failure_tracking(frontmatter)
+        if ft is not None:
+            allowed_ft_fields = set(REQUIRED_FAILURE_TRACKING_FIELDS)
+            for field in REQUIRED_FAILURE_TRACKING_FIELDS:
+                if field not in ft or not ft[field]:
+                    failures.append(
+                        f"{path} failure_tracking is missing required field: {field}"
+                    )
+            for field in sorted(set(ft.keys()) - allowed_ft_fields):
+                failures.append(
+                    f"{path} failure_tracking has unknown field: {field}"
+                )
+            count_val = ft.get("count", "")
+            if count_val and (not count_val.isdigit() or int(count_val) < 1):
+                failures.append(
+                    f"{path} failure_tracking.count must be a positive integer: {count_val}"
+                )
 
     return failures
 

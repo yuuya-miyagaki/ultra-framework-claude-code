@@ -1,12 +1,13 @@
 ---
 framework: ultra-framework-claude-code
-framework_version: "0.6.0"
+framework_version: "0.7.0"
 project_name: ""
 mode: Client
 phase: onboard
 task_type: feature
 iteration: 1
 ui_surface: false
+# task_size_rationale: "サイズ判定の根拠を書く（task_size 設定時に推奨）"
 last_updated: ""
 # gate name = phase whose output is approved; mode-transition gates unlock
 # movement between Client and Dev
@@ -28,6 +29,7 @@ current_refs:
   security: null
   deploy: null
 external_evidence: []
+failure_tracking: null
 next_action: ""
 blockers: []
 session_history: []
@@ -44,4 +46,7 @@ session_history: []
 
 ## Session History
 
-- 最新 3〜5 件だけを保持する
+- frontmatter の session_history は最新 3 件のみ保持する
+- 古いエントリはこのセクションに退避する
+- external_evidence も最新 3 件のみ保持し、古いものは docs/evidence-archive.md に移す
+- 完了した second-opinion ファイルは docs/reviews/ にアーカイブする

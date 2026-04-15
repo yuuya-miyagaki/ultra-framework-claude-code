@@ -72,6 +72,13 @@ if [ -f "$SECOND_OPINION_FILE" ]; then
   CONTEXT="${CONTEXT} | [BLOCKER] docs/second-opinion.md exists — read before proceeding"
 fi
 
+# Failure tracking detection.
+FT_COUNT=$(grep -A3 "^failure_tracking:" "$STATUS_FILE" | grep -m1 "count:" | sed 's/.*count:[[:space:]]*//' | sed 's/^"//;s/"$//' || true)
+if [ -n "$FT_COUNT" ] && [ "$FT_COUNT" != "null" ] && [ "$FT_COUNT" -ge 1 ] 2>/dev/null; then
+  FT_GOAL=$(grep -A3 "^failure_tracking:" "$STATUS_FILE" | grep -m1 "goal:" | sed 's/.*goal:[[:space:]]*//' | sed 's/^"//;s/"$//' || true)
+  CONTEXT="${CONTEXT} | [WARNING] failure tracking active: ${FT_GOAL} (${FT_COUNT}/3)"
+fi
+
 # Phase-aware skill and rule hints.
 HINT=""
 case "$PHASE" in
@@ -112,10 +119,17 @@ if [ -n "$HINT" ]; then
   CONTEXT="${CONTEXT} | ${HINT}"
 fi
 
-# Extract top learnings (confidence >= 8, max 3).
+# Extract first 3 high-confidence learnings (confidence >= 8).
+# Format assumption: each learning is a single line starting with "- [confidence:N] ".
+# Multi-line learnings are truncated to the first line (by design).
 LEARNINGS_FILE="${ROOT}/docs/LEARNINGS.md"
 if [ -f "$LEARNINGS_FILE" ]; then
-  LEARNINGS=$(grep -E '^\- \[confidence:(8|9|10)\]' "$LEARNINGS_FILE" | head -3 | sed 's/- \[confidence:[0-9]*\] /- /' || true)
+  LEARNINGS=$(
+    grep -E '^[[:space:]]*-[[:space:]]*\[confidence:(8|9|10)\][[:space:]]+' "$LEARNINGS_FILE" \
+      | head -3 \
+      | sed -E 's/^[[:space:]]*-[[:space:]]*\[confidence:[0-9]+\][[:space:]]+/- /' \
+      || true
+  )
   if [ -n "$LEARNINGS" ]; then
     CONTEXT="${CONTEXT} | learnings: ${LEARNINGS}"
   fi

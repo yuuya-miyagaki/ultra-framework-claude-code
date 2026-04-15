@@ -11,6 +11,8 @@
 - Stop after 3 failures toward the same goal: write `docs/second-opinion.md`,
   update STATUS.md blockers, recommend IDE chat, then wait.
   Count by goal, not method. TDD red-to-green cycles excluded.
+  Record each failure in STATUS.md `failure_tracking` (goal/count/last_attempt).
+  Reset to null when the goal is achieved or changed.
 - Destructive commands require explicit user approval. Enforce via hooks (PaC).
 
 ## Session Start
@@ -54,7 +56,7 @@ Skills live in `.claude/skills/`. Load for the current phase only.
 - Requirements: `docs/requirements/*`
 - Design and plans: `docs/specs/*`, `docs/plans/*`
 - Review, QA, and security evidence: `docs/qa-reports/*`
-- Skills: `.claude/skills/*`
+- Skills: named skills
 - Actual behavior: code, tests, and command output
 
 ## Completion Rule

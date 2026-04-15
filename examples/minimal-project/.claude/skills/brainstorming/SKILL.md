@@ -108,6 +108,7 @@ skip する場合は `gate_approvals.brainstorm` を `n/a` に設定する。
 
 - `docs/STATUS.md` の `phase` を `plan` に更新する
 - `gate_approvals.brainstorm` を `approved` に更新する
+- `task_size` を設定した場合、`task_size_rationale` にサイズ判定の根拠を記録する
 
 ## 既存コードベースでの作業
 

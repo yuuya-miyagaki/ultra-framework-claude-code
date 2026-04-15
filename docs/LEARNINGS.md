@@ -7,8 +7,7 @@
 
 <!-- category: tech -->
 
-- [confidence:8] `CLAUDE.md` は薄く保ち、詳細ルールは pull-based にした方が Claude Code
-  では安定しやすい。
+- [confidence:8] `CLAUDE.md` は薄く保ち、詳細ルールは pull-based にした方が Claude Code では安定しやすい。
 
 ## プロセス
 

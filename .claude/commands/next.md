@@ -41,4 +41,7 @@ Phase transition suggestions:
 | ship | - | docs | ship-and-docs |
 | docs | dev_ready_for_client | (Client or done) | - |
 
+If `session_history` or `external_evidence` has 3 entries (the max), suggest
+archiving older entries before adding new ones.
+
 Do not modify any files. Suggest only.
