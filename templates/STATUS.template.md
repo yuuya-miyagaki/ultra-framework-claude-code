@@ -1,6 +1,6 @@
 ---
 framework: ultra-framework-claude-code
-framework_version: "1.1.0"
+framework_version: "0.7.2"
 project_name: ""
 mode: Client
 phase: onboard

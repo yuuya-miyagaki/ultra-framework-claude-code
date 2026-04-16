@@ -13,7 +13,7 @@ from check_status import validate_status_file
 
 ROOT = Path(__file__).resolve().parents[1]
 
-FRAMEWORK_VERSION = "1.1.0"
+FRAMEWORK_VERSION = "0.7.2"
 
 PROFILES_DIR = ROOT / "templates" / "profiles"
 VALID_PROFILES = ["minimal", "standard", "full"]
@@ -133,6 +133,8 @@ REQUIRED_EXAMPLE_FILES = [
     ROOT / "examples/minimal-project/.claude/commands/next.md",
     ROOT / "examples/minimal-project/.claude/commands/recover.md",
     ROOT / "examples/minimal-project/.claude/commands/validate.md",
+    ROOT / "examples/minimal-project/.claude/commands/retro.md",
+    ROOT / "examples/minimal-project/.claude/commands/tutorial.md",
     ROOT / "examples/minimal-project/.claude/agents/planner.md",
     ROOT / "examples/minimal-project/.claude/agents/implementer.md",
     ROOT / "examples/minimal-project/.claude/agents/reviewer.md",
@@ -160,6 +162,7 @@ REQUIRED_EXAMPLE_FILES = [
 # Example skill directories — check SKILL.md exists in each.
 REQUIRED_EXAMPLE_SKILL_DIRS = [
     "brainstorming", "bug-diagnosis", "client-workflow", "deploy",
+    "docs-sync", "review", "security-review",
     "session-recovery", "ship-and-docs", "subagent-dev", "tdd",
 ]
 
@@ -350,7 +353,10 @@ def main() -> int:
         )
         return 1
 
-    # --- Full framework check (existing behavior, unchanged) ---
+    # --- Full framework check (always uses framework repo root) ---
+    # NOTE: --root is intentionally ignored in full mode because REQUIRED_*
+    # paths are computed at module level from ROOT.  run_eval.py passes --root
+    # but it always equals ROOT, so the ignored argument is harmless.
     failures: list[str] = []
 
     for path in REQUIRED_FILES + REQUIRED_AGENT_FILES + REQUIRED_SKILL_FILES + REQUIRED_RULES_FILES + REQUIRED_COMMAND_FILES + REQUIRED_TEMPLATE_FILES + REQUIRED_HOOK_FILES + REQUIRED_EXAMPLE_FILES:

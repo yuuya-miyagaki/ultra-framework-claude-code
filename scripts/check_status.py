@@ -234,6 +234,38 @@ def extract_session_history(frontmatter: str) -> list[dict[str, str]]:
     return entries
 
 
+def extract_blockers(frontmatter: str) -> list[str]:
+    """Extract blocker items from frontmatter.
+
+    Handles both inline ``blockers: []`` and block form::
+
+        blockers:
+          - "item 1"
+          - "item 2"
+    """
+    blockers: list[str] = []
+    in_block = False
+    for line in frontmatter.splitlines():
+        stripped = line.rstrip()
+        if not in_block:
+            if stripped.startswith("blockers:"):
+                inline = stripped[len("blockers:"):].strip()
+                if inline == "[]":
+                    return []
+                if inline == "":
+                    in_block = True
+                    continue
+                blockers.append(inline.strip('"'))
+                return blockers
+            continue
+        s = stripped.strip()
+        if s.startswith("- "):
+            blockers.append(s[2:].strip().strip('"'))
+        elif s and not stripped.startswith(" "):
+            break
+    return blockers
+
+
 REQUIRED_FAILURE_TRACKING_FIELDS = ["goal", "count", "last_attempt"]
 
 
@@ -732,7 +764,6 @@ def main() -> int:
     if args.pre_approve_gate:
         return pre_approve_gate(args.pre_approve_gate, root)
 
-    root = Path(args.root).resolve()
     status_path = root / "docs" / "STATUS.md"
     failures = validate_status_file(status_path)
 

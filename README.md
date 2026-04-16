@@ -132,7 +132,7 @@ pull-based loading). Project CLAUDE.md references skills by name.
   blocks framework file edits during non-framework tasks
 - **PreToolUse (Bash)**: denies control plane file writes during non-framework tasks;
   warns before destructive commands
-- **PostToolUse (Bash)**: captures exit codes and error context
+- **PostToolUse (Bash)**: detects test runner failures and suggests ReAct approach
 - **PostToolUse (Edit/Write/NotebookEdit)**: detects unauthorized gate tampering in STATUS.md
 - **PreCompact**: blocks compaction when STATUS.md is stale (not updated within 5 min during active phase); allows with context summary when current
 

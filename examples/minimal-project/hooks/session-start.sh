@@ -26,6 +26,7 @@ extract_value() {
 
 MODE=$(extract_value "mode")
 PHASE=$(extract_value "phase")
+TASK_TYPE=$(extract_value "task_type")
 NEXT_ACTION=$(extract_value "next_action")
 
 # Extract blockers (all list items, stop at next top-level key).
@@ -79,6 +80,21 @@ if [ -n "$FT_COUNT" ] && [ "$FT_COUNT" != "null" ] && [ "$FT_COUNT" -ge 1 ] 2>/d
   CONTEXT="${CONTEXT} | [WARNING] failure tracking active: ${FT_GOAL} (${FT_COUNT}/3)"
 fi
 
+# Stuck detection: phase stagnation (all session_history entries in same phase).
+HISTORY_PHASES=$(
+  sed -n '/^session_history:/,/^[a-z]/{/phase:/p;}' "$STATUS_FILE" \
+    | sed 's/.*phase:[[:space:]]*//' \
+    | sed 's/^"//;s/"$//'
+)
+HISTORY_COUNT=$(printf '%s\n' "$HISTORY_PHASES" | grep -c . || true)
+if [ "$HISTORY_COUNT" -ge 2 ]; then
+  UNIQUE_PHASES=$(printf '%s\n' "$HISTORY_PHASES" | sort -u | wc -l | tr -d ' ')
+  if [ "$UNIQUE_PHASES" -eq 1 ]; then
+    STUCK_PHASE=$(printf '%s\n' "$HISTORY_PHASES" | head -1)
+    CONTEXT="${CONTEXT} | [WARNING] stuck: ${HISTORY_COUNT} sessions in '${STUCK_PHASE}' phase — consider changing approach or escalating"
+  fi
+fi
+
 # Phase-aware skill and rule hints.
 HINT=""
 case "$PHASE" in
@@ -86,7 +102,11 @@ case "$PHASE" in
     HINT="skill: client-workflow"
     ;;
   brainstorm)
-    HINT="skill: brainstorming / TDD必須 / エビデンスなき完了なし"
+    if [ "$TASK_TYPE" = "bugfix" ] || [ "$TASK_TYPE" = "hotfix" ]; then
+      HINT="skill: bug-diagnosis / TDD必須 / brainstorm+plan=n/a"
+    else
+      HINT="skill: brainstorming / TDD必須 / エビデンスなき完了なし"
+    fi
     ;;
   plan)
     HINT="skill: subagent-dev(計画) / Boundary Map必須 / TDD必須"

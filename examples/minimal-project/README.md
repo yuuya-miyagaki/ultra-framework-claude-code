@@ -13,9 +13,9 @@ using Ultra Framework Claude Code.
 - review, QA, and security evidence
 - handover documents
 - `.claude/agents/` — bounded specialist roles (10 agents)
-- `.claude/commands/` — slash commands (`/status`, `/gate`, `/next`, `/recover`, `/validate`)
+- `.claude/commands/` — slash commands (`/status`, `/gate`, `/next`, `/recover`, `/validate`, `/retro`, `/tutorial`)
 - `.claude/rules/` — always-loaded state machine and routing rules
-- `.claude/skills/` — pull-based skill documents (8 skills)
+- `.claude/skills/` — pull-based skill documents (11 skills)
 - `.claude/settings.json` — hooks configuration
 - `hooks/` — runtime enforcement hooks (including `hooks/lib/`)
 - `scripts/update-gate.sh` (required by `/gate` command for gate approvals)

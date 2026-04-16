@@ -26,6 +26,7 @@ extract_value() {
 
 MODE=$(extract_value "mode")
 PHASE=$(extract_value "phase")
+TASK_TYPE=$(extract_value "task_type")
 NEXT_ACTION=$(extract_value "next_action")
 
 # Extract blockers (all list items, stop at next top-level key).
@@ -101,7 +102,11 @@ case "$PHASE" in
     HINT="skill: client-workflow"
     ;;
   brainstorm)
-    HINT="skill: brainstorming / TDD必須 / エビデンスなき完了なし"
+    if [ "$TASK_TYPE" = "bugfix" ] || [ "$TASK_TYPE" = "hotfix" ]; then
+      HINT="skill: bug-diagnosis / TDD必須 / brainstorm+plan=n/a"
+    else
+      HINT="skill: brainstorming / TDD必須 / エビデンスなき完了なし"
+    fi
     ;;
   plan)
     HINT="skill: subagent-dev(計画) / Boundary Map必須 / TDD必須"

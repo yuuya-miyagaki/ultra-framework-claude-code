@@ -44,6 +44,14 @@ color: yellow
 - do not use Edit, Write, or Bash commands that modify files
 - complete within 15 turns; if not possible, summarize progress and return
 
+## Known Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "It's just one function, no need to split" | Large functions resist testing and reuse. |
+| "Naming matches my mental model" | Project conventions override personal preference. |
+| "Circular dependency works fine at runtime" | Circular deps block refactoring and bundling. |
+
 ## Context Budget
 
 - open only changed files + adjacent existing code (for pattern reference)

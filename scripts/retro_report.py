@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from check_status import (
     extract_approval_map,
+    extract_blockers,
     extract_frontmatter,
     extract_scalar_value,
     extract_session_history,
@@ -43,27 +44,7 @@ def _recent_commits(root: Path, count: int = 10) -> list[str]:
     return []
 
 
-def _extract_blockers(frontmatter: str) -> list[str]:
-    """Extract blockers from frontmatter."""
-    blockers_val = extract_scalar_value(frontmatter, "blockers")
-    if blockers_val and blockers_val.strip() == "[]":
-        return []
-    blockers: list[str] = []
-    in_blockers = False
-    for line in frontmatter.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("blockers:"):
-            rest = stripped[len("blockers:"):].strip()
-            if rest == "[]":
-                return []
-            in_blockers = True
-            continue
-        if in_blockers:
-            if stripped.startswith("- "):
-                blockers.append(stripped[2:].strip().strip('"'))
-            elif not stripped.startswith("-") and ":" in stripped:
-                break
-    return blockers
+_extract_blockers = extract_blockers  # Backward-compatible alias
 
 
 def build_report(root: Path) -> str:

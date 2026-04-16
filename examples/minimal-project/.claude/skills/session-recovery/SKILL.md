@@ -27,6 +27,13 @@ user-invocable: true
 - `gate_approvals`: どのゲートまで通過したか
 - `session_history`: 最新エントリの内容
 
+### Step 1.5: 運用健全性チェック
+
+`python3 scripts/status_doctor.py --root .` を実行し、結果を確認する。
+
+- WARNING: 復帰サマリに含めてユーザーに報告
+- FAIL: gate を進めず、FAIL の解消を優先する（例: second-opinion.md の作成）
+
 ### Step 2: 現在のフェーズに必要な refs を読む
 
 `current_refs` から、現在のフェーズに関連するドキュメントだけを読む。

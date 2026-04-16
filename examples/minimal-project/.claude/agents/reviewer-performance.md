@@ -44,6 +44,14 @@ color: yellow
 - do not use Edit, Write, or Bash commands that modify files
 - complete within 15 turns; if not possible, summarize progress and return
 
+## Known Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "Data volume is small now" | O(n²) compounds as data grows. |
+| "It's only one extra query" | N+1 in a loop scales linearly with records. |
+| "Premature optimization" | Measurable-impact issues are not premature. |
+
 ## Context Budget
 
 - open only changed implementation files + direct dependencies

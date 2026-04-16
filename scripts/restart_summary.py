@@ -18,6 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from check_status import (
     extract_approval_map,
+    extract_blockers,
     extract_current_refs,
     extract_frontmatter,
     extract_scalar_value,
@@ -113,31 +114,7 @@ def build_summary(root: Path) -> str:
     return "\n".join(lines)
 
 
-def _extract_blockers(frontmatter: str) -> list[str]:
-    """Extract blocker items from frontmatter."""
-    blockers: list[str] = []
-    in_block = False
-    for line in frontmatter.splitlines():
-        stripped = line.rstrip()
-        if not in_block:
-            if stripped.startswith("blockers:"):
-                inline = stripped[len("blockers:"):].strip()
-                if inline == "[]":
-                    return []
-                if inline == "":
-                    in_block = True
-                    continue
-                # Inline non-empty value.
-                blockers.append(inline)
-                return blockers
-            continue
-        # Inside blockers block.
-        s = stripped.strip()
-        if s.startswith("- "):
-            blockers.append(s[2:].strip().strip('"'))
-        elif s and not stripped.startswith(" "):
-            break
-    return blockers
+_extract_blockers = extract_blockers  # Backward-compatible alias
 
 
 def main() -> int:
