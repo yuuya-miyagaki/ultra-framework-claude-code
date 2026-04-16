@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
+import sys
 from pathlib import Path
 
 from check_status import validate_status_file
@@ -12,6 +14,9 @@ from check_status import validate_status_file
 ROOT = Path(__file__).resolve().parents[1]
 
 FRAMEWORK_VERSION = "0.7.2"
+
+PROFILES_DIR = ROOT / "templates" / "profiles"
+VALID_PROFILES = ["minimal", "standard", "full"]
 
 REQUIRED_FILES = [
     ROOT / "README.md",
@@ -46,6 +51,9 @@ REQUIRED_SKILL_FILES = [
     ROOT / ".claude/skills/client-workflow/SKILL.md",
     ROOT / ".claude/skills/session-recovery/SKILL.md",
     ROOT / ".claude/skills/ship-and-docs/SKILL.md",
+    ROOT / ".claude/skills/review/SKILL.md",
+    ROOT / ".claude/skills/security-review/SKILL.md",
+    ROOT / ".claude/skills/docs-sync/SKILL.md",
 ]
 
 REQUIRED_RULES_FILES = [
@@ -196,7 +204,151 @@ def word_count(text: str) -> int:
     return len(text.split())
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Validate ultra-framework-claude-code contract",
+    )
+    parser.add_argument(
+        "--profile",
+        choices=VALID_PROFILES,
+        default=None,
+        help="Validation profile (minimal/standard/full). "
+        "Omit for full framework check.",
+    )
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=None,
+        help="Project root to validate (default: framework repo root).",
+    )
+    return parser.parse_args()
+
+
+def run_profile_check(profile_name: str, project_root: Path) -> int:
+    """Run profile-based validation against a project root."""
+    profile_path = PROFILES_DIR / f"{profile_name}.json"
+    if not profile_path.exists():
+        print(f"ERROR: profile definition not found: {profile_path}")
+        return 1
+
+    profile = json.loads(read_text(profile_path))
+    required_files: list[str] = profile.get("required", [])
+    recommended_files: list[str] = profile.get("recommended", [])
+    required_hook_scripts: list[str] = profile.get("required_hook_scripts", [])
+
+    failures: list[str] = []
+    warnings: list[str] = []
+
+    # --- File existence checks ---
+    for rel_path in required_files:
+        if not (project_root / rel_path).exists():
+            failures.append(f"missing required file: {rel_path}")
+
+    for rel_path in recommended_files:
+        if not (project_root / rel_path).exists():
+            # settings.local.json is an accepted alternative to settings.json.
+            if rel_path == ".claude/settings.json":
+                if (project_root / ".claude" / "settings.local.json").exists():
+                    continue
+            warnings.append(f"missing recommended file: {rel_path}")
+
+    # --- CLAUDE.md structural checks ---
+    claude_path = project_root / "CLAUDE.md"
+    if "CLAUDE.md" in required_files and claude_path.exists():
+        text = read_text(claude_path)
+        for heading in REQUIRED_CLAUDE_HEADINGS:
+            if heading not in text:
+                failures.append(f"CLAUDE.md is missing heading: {heading}")
+        count = word_count(text)
+        if count > MAX_CLAUDE_WORDS:
+            failures.append(
+                f"CLAUDE.md is too large: {count} words > {MAX_CLAUDE_WORDS}"
+            )
+
+    # --- STATUS.md validation ---
+    status_path = project_root / "docs" / "STATUS.md"
+    if "docs/STATUS.md" in required_files and status_path.exists():
+        failures.extend(validate_status_file(status_path))
+
+    # --- settings hook registration (standard profile) ---
+    # Check both settings.json and settings.local.json (Quick Start recommends
+    # settings.local.json for real projects).
+    if required_hook_scripts:
+        settings_candidates = [
+            project_root / ".claude" / "settings.json",
+            project_root / ".claude" / "settings.local.json",
+        ]
+        settings_path = None
+        for candidate in settings_candidates:
+            if candidate.exists():
+                settings_path = candidate
+                break
+        if settings_path is not None:
+            try:
+                settings_data = json.loads(read_text(settings_path))
+            except json.JSONDecodeError as e:
+                failures.append(
+                    f"{settings_path.relative_to(project_root)} is not valid JSON: {e}"
+                )
+                settings_data = {}
+            hooks_config = (
+                settings_data.get("hooks", {})
+                if isinstance(settings_data, dict)
+                else {}
+            )
+            registered_commands: list[str] = []
+            for event_entries in hooks_config.values():
+                if not isinstance(event_entries, list):
+                    continue
+                for entry in event_entries:
+                    if not isinstance(entry, dict):
+                        continue
+                    for hook in entry.get("hooks", []):
+                        if isinstance(hook, dict):
+                            cmd = hook.get("command", "")
+                            if isinstance(cmd, str) and cmd:
+                                registered_commands.append(cmd)
+            settings_rel = settings_path.relative_to(project_root)
+            for script in required_hook_scripts:
+                if not any(script in cmd for cmd in registered_commands):
+                    failures.append(
+                        f"{settings_rel} missing hook registration: {script}"
+                    )
+        else:
+            warnings.append(
+                ".claude/settings.json (or settings.local.json) not found"
+                " — recommended hooks are not registered"
+            )
+
+    # --- Report ---
+    for w in warnings:
+        print(f"WARNING: {w}")
+    if failures:
+        for f in failures:
+            print(f"FAIL: {f}")
+        return 1
+
+    print(f"PASS: project contract is aligned (profile: {profile_name})")
+    return 0
+
+
 def main() -> int:
+    args = parse_args()
+
+    if args.profile is not None and args.profile != "full":
+        project_root = args.root.resolve() if args.root else ROOT
+        return run_profile_check(args.profile, project_root)
+
+    if args.profile == "full" and args.root is not None:
+        print(
+            "ERROR: --profile=full always validates the framework repo root."
+        )
+        print(
+            "       Use --profile=minimal or --profile=standard with --root."
+        )
+        return 1
+
+    # --- Full framework check (existing behavior, unchanged) ---
     failures: list[str] = []
 
     for path in REQUIRED_FILES + REQUIRED_AGENT_FILES + REQUIRED_SKILL_FILES + REQUIRED_RULES_FILES + REQUIRED_COMMAND_FILES + REQUIRED_TEMPLATE_FILES + REQUIRED_HOOK_FILES + REQUIRED_EXAMPLE_FILES:

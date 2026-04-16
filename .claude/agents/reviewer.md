@@ -21,6 +21,7 @@ color: yellow
 1. `docs/STATUS.md`
 2. active plan or spec refs
 3. the code diff and any directly affected files
+4. review skill (evidence checklist and severity template)
 
 ## Produce
 

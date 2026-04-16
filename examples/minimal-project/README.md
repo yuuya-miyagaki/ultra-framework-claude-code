@@ -28,3 +28,12 @@ Run from the framework repository root:
 ```bash
 python3 scripts/check_status.py --root examples/minimal-project
 ```
+
+Profile-based contract validation (optional, from framework root):
+
+```bash
+python3 scripts/check_framework_contract.py --profile=standard --root examples/minimal-project
+```
+
+If `.claude/settings.json` is present, required hooks registration is verified.
+If absent, a WARNING is shown (not FAIL).

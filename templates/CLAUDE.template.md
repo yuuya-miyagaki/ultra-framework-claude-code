@@ -48,6 +48,7 @@ Skills live in `.claude/skills/`. Load for the current phase only.
 
 - brainstorming, bug-diagnosis, tdd, subagent-dev
 - deploy, client-workflow, session-recovery, ship-and-docs
+- review, security-review, docs-sync
 
 ## Source of Truth
 

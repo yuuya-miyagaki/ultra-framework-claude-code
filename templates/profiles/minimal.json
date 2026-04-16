@@ -1,0 +1,12 @@
+{
+  "name": "minimal",
+  "description": "Minimum scaffold contract: core files only",
+  "required": [
+    "CLAUDE.md",
+    "docs/STATUS.md",
+    "docs/LEARNINGS.md",
+    "scripts/check_status.py"
+  ],
+  "recommended": [],
+  "hooks_include": ["session-start.sh"]
+}

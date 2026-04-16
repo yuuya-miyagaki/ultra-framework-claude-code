@@ -41,6 +41,8 @@ ultra-framework-claude-code/
 │   └── lib/                     # shared hook utilities
 ├── templates/
 ├── scripts/
+├── extensions/                  # optional addons (manual opt-in)
+│   └── qa-browser/              # browser QA workflow
 └── examples/minimal-project/
 ```
 
@@ -58,23 +60,24 @@ ultra-framework-claude-code/
 
 ## Quick Start
 
+### Automated setup (recommended)
+
+```bash
+bin/setup.sh --profile=standard --target=<your-project-dir>
+```
+
+Available profiles: `minimal` (core only), `standard` (recommended), `full` (everything including agents).
+
+### Manual setup
+
 1. Read [CLAUDE.md](CLAUDE.md)
 2. Copy `templates/CLAUDE.template.md` as your project's `CLAUDE.md`
 3. Copy the templates you need from `templates/` into your project's `docs/`
-4. Copy `.claude/agents/` into the project if you want the default specialist set
-5. Copy `.claude/skills/` into the project for skill documents
-6. Copy `.claude/rules/` into the project for state machine and routing rules
-7. Copy `.claude/commands/` into the project for slash commands
-8. Initialize `docs/STATUS.md` from `templates/STATUS.template.md`
-9. Copy `templates/hooks.template.json` into `.claude/settings.local.json`
-   and copy the `hooks/` directory (including `hooks/lib/`) into the project root
-   (use `settings.local.json` for real projects so it can be gitignored;
-   the example uses `settings.json` as a committed sample)
-10. Copy `scripts/update-gate.sh` into the project's `scripts/` directory
-    (required by the `/gate` command for gate approvals)
-11. Copy `scripts/check_status.py` into the project's `scripts/` directory
-    (required by the `/validate` command for status validation)
-12. Validate the scaffold before use
+4. Copy `.claude/rules/` into the project for state machine and routing rules
+5. Copy `.claude/commands/` into the project for slash commands
+6. Copy `hooks/` directory and generate `.claude/settings.local.json` from `templates/hooks.template.json`
+7. Copy `scripts/check_status.py` and `scripts/update-gate.sh` into the project
+8. Validate the scaffold before use
 
 **Skills** (`.claude/skills/`) are loaded by Claude Code natively. Each skill
 has a `SKILL.md` with frontmatter (`disable-model-invocation: true` for
@@ -87,8 +90,9 @@ pull-based loading). Project CLAUDE.md references skills by name.
 | `/status` | Display formatted STATUS.md summary |
 | `/gate` | List and approve gates |
 | `/recover` | Invoke session recovery |
-| `/validate` | Run framework validators |
+| `/validate` | Run tiered framework evaluation |
 | `/next` | Show next action and phase transition suggestions |
+| `/retro` | Generate retrospective report |
 
 **Hooks** (`hooks/`) enforce framework rules at runtime:
 
@@ -106,10 +110,17 @@ pull-based loading). Project CLAUDE.md references skills by name.
 From this repository root:
 
 ```bash
-python3 scripts/check_framework_contract.py
-python3 scripts/check_status.py --root .
-python3 scripts/check_status.py --root examples/minimal-project
+python3 scripts/run_eval.py --tier 1
 ```
+
+Profile-based validation for scaffold projects:
+
+```bash
+python3 scripts/check_framework_contract.py --profile=standard --root examples/minimal-project
+```
+
+Available profiles: `minimal` (4 core files), `standard` (14 required + 7 recommended). `full` is framework repo root only (do not use with `--root`).
+Profile definitions: `templates/profiles/*.json`.
 
 Optional strict YAML validation (requires PyYAML):
 
@@ -178,6 +189,21 @@ python3 scripts/check_status.py --root . --strict
 6. **Agent frontmatter enriched**: `model`, `permissionMode`, `effort`, `color` fields
 7. **Agent language unified**: all agent files now in English
 8. **CLAUDE.md slimmed**: 583 → 320 words
+
+## Extensions
+
+Optional addons that are not included in `setup.sh` profiles. Copy manually.
+
+### qa-browser
+
+Browser-based QA workflow using Playwright MCP. Provides a 4-step verification
+process: Snapshot → Interact → Verify → Evidence Capture.
+
+```bash
+cp -r extensions/qa-browser <your-project>/extensions/qa-browser
+```
+
+See [extensions/qa-browser/README.md](extensions/qa-browser/README.md) for details.
 
 ## Relationship to Ultra Framework v7
 

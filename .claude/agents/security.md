@@ -22,6 +22,7 @@ color: red
 1. `docs/STATUS.md`
 2. active plan, review, and QA refs
 3. the code diff and security-relevant files
+4. security-review skill (OWASP checklist and evidence requirements)
 
 ## Produce
 

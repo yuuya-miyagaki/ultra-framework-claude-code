@@ -79,6 +79,21 @@ if [ -n "$FT_COUNT" ] && [ "$FT_COUNT" != "null" ] && [ "$FT_COUNT" -ge 1 ] 2>/d
   CONTEXT="${CONTEXT} | [WARNING] failure tracking active: ${FT_GOAL} (${FT_COUNT}/3)"
 fi
 
+# Stuck detection: phase stagnation (all session_history entries in same phase).
+HISTORY_PHASES=$(
+  sed -n '/^session_history:/,/^[a-z]/{/phase:/p;}' "$STATUS_FILE" \
+    | sed 's/.*phase:[[:space:]]*//' \
+    | sed 's/^"//;s/"$//'
+)
+HISTORY_COUNT=$(printf '%s\n' "$HISTORY_PHASES" | grep -c . || true)
+if [ "$HISTORY_COUNT" -ge 2 ]; then
+  UNIQUE_PHASES=$(printf '%s\n' "$HISTORY_PHASES" | sort -u | wc -l | tr -d ' ')
+  if [ "$UNIQUE_PHASES" -eq 1 ]; then
+    STUCK_PHASE=$(printf '%s\n' "$HISTORY_PHASES" | head -1)
+    CONTEXT="${CONTEXT} | [WARNING] stuck: ${HISTORY_COUNT} sessions in '${STUCK_PHASE}' phase — consider changing approach or escalating"
+  fi
+fi
+
 # Phase-aware skill and rule hints.
 HINT=""
 case "$PHASE" in

@@ -1,0 +1,40 @@
+{
+  "name": "standard",
+  "description": "Recommended project setup: core + rules + commands + key hooks",
+  "required": [
+    "CLAUDE.md",
+    "docs/STATUS.md",
+    "docs/LEARNINGS.md",
+    "scripts/check_status.py",
+    "scripts/update-gate.sh",
+    ".claude/rules/state-machine.md",
+    ".claude/rules/routing.md",
+    ".claude/commands/status.md",
+    ".claude/commands/gate.md",
+    ".claude/commands/validate.md",
+    "hooks/session-start.sh",
+    "hooks/check-gate.sh",
+    "hooks/post-status-audit.sh",
+    "hooks/lib/extract-input.sh"
+  ],
+  "recommended": [
+    "hooks/check-tdd.sh",
+    "hooks/post-bash.sh",
+    "hooks/check-destructive.sh",
+    "hooks/pre-compact.sh",
+    "hooks/check-control-plane.sh",
+    ".claude/skills/tdd/SKILL.md",
+    ".claude/skills/subagent-dev/SKILL.md"
+  ],
+  "required_hook_scripts": [
+    "hooks/session-start.sh",
+    "hooks/check-gate.sh",
+    "hooks/post-status-audit.sh"
+  ],
+  "hooks_include": [
+    "session-start.sh",
+    "check-gate.sh",
+    "post-status-audit.sh",
+    "pre-compact.sh"
+  ]
+}

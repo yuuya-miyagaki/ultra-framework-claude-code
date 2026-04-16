@@ -63,6 +63,8 @@ TO-CLIENT の内容をユーザーに提示し、承認を得る。
 
 ### Step 4: LEARNINGS 更新
 
+まず `docs-sync` skill を読み、整合性チェックを実施する。
+
 `docs/LEARNINGS.md` に以下を追記し、昇格ルールに基づいて既存エントリを評価する:
 
 - このタスクで得た技術的知見

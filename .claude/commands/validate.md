@@ -1,20 +1,23 @@
 ---
-description: Run framework validators (contract + status checks)
+description: Run tiered framework evaluation
 allowed-tools: Bash, Read
 ---
 
 # /validate
 
-Run both framework validators and report results.
+Run the tier 1 evaluation suite (all 4 validators) and report results.
 
 ```bash
-python3 scripts/check_framework_contract.py
-python3 scripts/check_status.py --root .
+python3 scripts/run_eval.py --tier 1
 ```
 
-If an `examples/minimal-project/` directory exists, also run:
+Report the summary table and highlight any FAIL or WARNING results.
+
+## Profile-based validation (optional)
+
+To validate a project against a specific profile:
 ```bash
-python3 scripts/check_status.py --root examples/minimal-project
+python3 scripts/check_framework_contract.py --profile=standard --root <project-path>
 ```
 
-Report each validator result (PASS/FAIL) and list any failures.
+Available profiles: `minimal`, `standard`. (`full` is framework repo root only — do not use with `--root`.)

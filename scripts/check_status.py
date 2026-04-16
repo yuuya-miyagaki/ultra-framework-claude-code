@@ -63,6 +63,8 @@ MODE_PHASES = {
     "Client": {"onboard", "discovery", "requirements", "scope", "acceptance", "handover"},
     "Dev": {"brainstorm", "plan", "implement", "review", "qa", "security", "deploy", "ship", "docs"},
 }
+# Ordered Dev phase sequence (source of truth for phase-order checks).
+DEV_PHASE_ORDER = ["brainstorm", "plan", "implement", "review", "qa", "security", "deploy", "ship", "docs"]
 EXPECTED_CURRENT_REF_KEYS = {"requirements", "plan", "spec", "review", "qa", "security", "deploy"}
 ALLOWED_TASK_TYPES = {"feature", "refactor", "bugfix", "hotfix", "framework"}
 ALLOWED_TASK_SIZES = {"S", "M", "L"}
@@ -623,12 +625,112 @@ def validate_with_pyyaml(text: str, path: Path) -> list[str]:
     return failures
 
 
+def pre_approve_gate(gate_name: str, root: Path) -> int:
+    """Check if a gate can be approved given current STATUS.md state.
+
+    Returns 0 if gate can be approved, 1 otherwise.
+    Uses PHASE_REQUIRES_GATES, SIZE_ALLOWED_PHASES, and gate_ref_mapping
+    as the single source of truth for gate approval contracts.
+    Called by update-gate.sh via --pre-approve-gate.
+    """
+    status_path = root / "docs" / "STATUS.md"
+    if not status_path.exists():
+        print("ERROR: docs/STATUS.md not found")
+        return 1
+
+    text = read_text(status_path)
+    frontmatter = extract_frontmatter(text)
+    if frontmatter is None:
+        print("ERROR: docs/STATUS.md is missing YAML frontmatter")
+        return 1
+
+    phase = extract_scalar_value(frontmatter, "phase")
+    task_type = extract_scalar_value(frontmatter, "task_type")
+    task_size = extract_scalar_value(frontmatter, "task_size")
+    approvals = extract_approval_map(frontmatter)
+    refs = extract_current_refs(frontmatter)
+
+    # Mode-transition gates skip context validation.
+    if gate_name in ("client_ready_for_dev", "dev_ready_for_client"):
+        return 0
+
+    # --- Phase order check ---
+    if gate_name in DEV_PHASE_ORDER and phase in DEV_PHASE_ORDER:
+        gate_idx = DEV_PHASE_ORDER.index(gate_name)
+        phase_idx = DEV_PHASE_ORDER.index(phase)
+        if phase_idx < gate_idx:
+            print(f"ERROR: Cannot approve '{gate_name}' — current phase is '{phase}'.")
+            print(f"       This gate requires reaching at least the '{gate_name}' phase.")
+            return 1
+
+    # --- Prerequisite gates check ---
+    required_prior = list(PHASE_REQUIRES_GATES.get(gate_name, []))
+    if task_size and task_size in SIZE_ALLOWED_PHASES:
+        allowed_phases = SIZE_ALLOWED_PHASES[task_size]
+        required_prior = [g for g in required_prior if g in allowed_phases]
+    for prereq in required_prior:
+        prereq_val = approvals.get(prereq, "pending")
+        if prereq_val not in ("approved", "n/a"):
+            print(
+                f"ERROR: Cannot approve '{gate_name}' — prerequisite gate "
+                f"'{prereq}' is '{prereq_val}' (must be approved or n/a)."
+            )
+            return 1
+
+    # --- Strict gate enforcement ---
+    # feature/refactor/framework require specific prior gates to be approved
+    # (not n/a) at certain phases. Uses STRICT_GATE_TASK_TYPES and
+    # STRICT_GATE_BY_PHASE as source of truth (same as validate_status_file).
+    if task_type in STRICT_GATE_TASK_TYPES and task_size != "S":
+        strict_prereqs = list(STRICT_GATE_BY_PHASE.get(gate_name, []))
+        if task_size and task_size in SIZE_ALLOWED_PHASES:
+            allowed_phases = SIZE_ALLOWED_PHASES[task_size]
+            strict_prereqs = [g for g in strict_prereqs if g in allowed_phases]
+        for strict_gate in strict_prereqs:
+            gate_val = approvals.get(strict_gate, "pending")
+            if gate_val == "n/a":
+                print(
+                    f"ERROR: Cannot approve '{gate_name}' — task_type "
+                    f"'{task_type}' requires gate '{strict_gate}' to be "
+                    f"approved (not n/a)."
+                )
+                return 1
+
+    # --- Gate-ref consistency (WARNING only) ---
+    gate_ref_mapping = {
+        "plan": "plan",
+        "review": "review",
+        "qa": "qa",
+        "security": "security",
+        "deploy": "deploy",
+    }
+    if gate_name in gate_ref_mapping:
+        ref_key = gate_ref_mapping[gate_name]
+        ref_value = refs.get(ref_key)
+        ref_is_empty = ref_value is None or ref_value == "null" or ref_value == []
+        if ref_is_empty:
+            print(f"WARNING: Approving '{gate_name}' but current_refs.{ref_key} is empty.")
+            print(
+                "         Set the ref before running /validate to avoid a "
+                "check_status.py failure."
+            )
+
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", default=".", help="Project root containing docs/STATUS.md")
     parser.add_argument("--strict", action="store_true",
                         help="Enable PyYAML cross-validation (requires PyYAML)")
+    parser.add_argument("--pre-approve-gate", dest="pre_approve_gate", default=None,
+                        help="Check if a gate can be approved (used by update-gate.sh)")
     args = parser.parse_args()
+
+    root = Path(args.root).resolve()
+
+    if args.pre_approve_gate:
+        return pre_approve_gate(args.pre_approve_gate, root)
 
     root = Path(args.root).resolve()
     status_path = root / "docs" / "STATUS.md"

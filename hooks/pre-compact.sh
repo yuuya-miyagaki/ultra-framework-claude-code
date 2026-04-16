@@ -44,8 +44,12 @@ escape_for_json() {
 }
 
 # Staleness check: block compaction if STATUS.md was not recently updated.
-# "Recently" = modified within the last 5 minutes (300 seconds).
-STALE_THRESHOLD=300
+# Default: 5 minutes (300 seconds). Override with ULTRA_PRECOMPACT_INTERVAL.
+STALE_THRESHOLD="${ULTRA_PRECOMPACT_INTERVAL:-300}"
+# Validate: fall back to default if non-numeric, zero, or negative.
+case "$STALE_THRESHOLD" in
+  ''|*[!0-9]*|0) STALE_THRESHOLD=300 ;;
+esac
 NOW=$(date +%s)
 FILE_MTIME=$(stat -f %m "$STATUS_FILE" 2>/dev/null || stat -c %Y "$STATUS_FILE" 2>/dev/null || echo "$NOW")
 ELAPSED=$(( NOW - FILE_MTIME ))

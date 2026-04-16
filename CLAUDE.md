@@ -14,6 +14,7 @@
   Record each failure in STATUS.md `failure_tracking` (goal/count/last_attempt).
   Reset to null when the goal is achieved or changed.
 - Destructive commands require explicit user approval. Enforce via hooks (PaC).
+- Hook enforcement level is set at install via `bin/setup.sh --profile`.
 
 ## Session Start
 
@@ -48,6 +49,7 @@ Skills live in `.claude/skills/`. Load for the current phase only.
 
 - brainstorming, bug-diagnosis, tdd, subagent-dev
 - deploy, client-workflow, session-recovery, ship-and-docs
+- review, security-review, docs-sync
 
 ## Source of Truth
 

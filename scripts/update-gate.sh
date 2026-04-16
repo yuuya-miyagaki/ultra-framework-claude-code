@@ -68,6 +68,21 @@ if [ "$CURRENT" = "n/a" ]; then
   exit 1
 fi
 
+# --- Context validation ---
+# Delegate to check_status.py (sole source of truth for gate contracts).
+# Phase order, prerequisites, task_size/task_type handling, and gate-ref
+# consistency are all defined in check_status.py. No duplication here.
+GATE_CHECK=$(python3 "${SCRIPT_DIR}/check_status.py" --root "$ROOT" --pre-approve-gate "$GATE_NAME" 2>&1)
+GATE_CHECK_RC=$?
+if [ $GATE_CHECK_RC -ne 0 ]; then
+  echo "$GATE_CHECK"
+  exit 1
+fi
+# Print any warnings from the pre-approval check.
+if [ -n "$GATE_CHECK" ]; then
+  echo "$GATE_CHECK"
+fi
+
 # --- Update STATUS.md ---
 
 echo "[gate-approve] $GATE_NAME: $CURRENT → approved"

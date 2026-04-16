@@ -44,6 +44,14 @@ color: yellow
 - do not use Edit, Write, or Bash commands that modify files
 - complete within 15 turns; if not possible, summarize progress and return
 
+## Known Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "Happy path passes, edge cases are unlikely" | Edge cases cause production incidents. |
+| "Mock covers the contract" | Over-mocking hides integration bugs. |
+| "Tests existed before my change" | Changed code needs updated tests. |
+
 ## Context Budget
 
 - open only test files + corresponding implementation files
