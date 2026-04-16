@@ -59,6 +59,7 @@ Skills live in `.claude/skills/`. Load for the current phase only.
 - Review, QA, and security evidence: `docs/qa-reports/*`
 - Skills: named skills
 - Actual behavior: code, tests, and command output
+- Optional addons: `extensions/` (manual opt-in, not in core contract)
 
 ## Completion Rule
 

@@ -13,7 +13,7 @@ from check_status import validate_status_file
 
 ROOT = Path(__file__).resolve().parents[1]
 
-FRAMEWORK_VERSION = "0.7.2"
+FRAMEWORK_VERSION = "1.1.0"
 
 PROFILES_DIR = ROOT / "templates" / "profiles"
 VALID_PROFILES = ["minimal", "standard", "full"]
@@ -67,6 +67,8 @@ REQUIRED_COMMAND_FILES = [
     ROOT / ".claude/commands/recover.md",
     ROOT / ".claude/commands/validate.md",
     ROOT / ".claude/commands/next.md",
+    ROOT / ".claude/commands/tutorial.md",
+    ROOT / ".claude/commands/retro.md",
 ]
 
 REQUIRED_TEMPLATE_FILES = [

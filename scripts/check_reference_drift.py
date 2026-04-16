@@ -136,6 +136,13 @@ def check_commands_in_readme(root: Path) -> tuple[list[str], list[str]]:
     for name in sorted(missing_in_readme):
         warnings.append(f"command '/{name}' exists as file but not in README.md command table")
 
+    # Reverse: README command table lists a command without a matching file.
+    # Use table-row pattern to avoid matching prose mentions of /name.
+    table_commands = set(re.findall(r"^\|\s*`/([a-z][a-z0-9_-]*)`\s*\|", readme_text, re.MULTILINE))
+    extra_in_readme = table_commands - actual_commands
+    for name in sorted(extra_in_readme):
+        warnings.append(f"command '/{name}' in README.md command table but no .claude/commands/{name}.md")
+
     return failures, warnings
 
 

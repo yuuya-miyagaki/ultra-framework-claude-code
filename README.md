@@ -26,11 +26,24 @@ It removes the parts that add overhead in Claude Code:
 - Low token waste
 - Policy as Code (PaC) via hooks
 
+## Design Philosophy
+
+Each design choice reflects a specific constraint learned from operating
+AI-assisted development workflows at scale.
+
+| Principle | Why |
+|-----------|-----|
+| **Thin CLAUDE.md** (<700 words) | Always-on context that grows steals budget from phase-specific skills. Keeping the kernel small leaves room to pull what matters now. |
+| **STATUS.md as human-readable state** | A database is invisible at session restart. A plain-text ledger supports diff, grep, and manual edits — the three things you need when recovery fails. |
+| **Pull-based skills** | Loading every skill at once floods the context with rules irrelevant to the current phase. Pull-on-demand keeps signal-to-noise high. |
+| **Hard gates + Hook PaC** | Written rules get skipped. Hooks enforce them at runtime — a failed gate blocks the tool call, not just the intention. |
+| **Claude Code native only** | Cross-harness ambition adds abstraction layers that prevent native optimizations (skills, agents, commands, hooks). Specializing for one host keeps the framework thin. |
+
 ## Repository Structure
 
 ```text
 ultra-framework-claude-code/
-├── CLAUDE.md                    # control kernel (~320 words)
+├── CLAUDE.md                    # control kernel (~360 words)
 ├── .claude/
 │   ├── agents/                  # 10 bounded specialist roles
 │   ├── commands/                # slash commands (/status, /gate, etc.)
@@ -57,6 +70,23 @@ ultra-framework-claude-code/
 - `.claude/commands/` provides slash commands for common operations
 - `hooks/` provides runtime enforcement via Claude Code hooks
 - `templates/` is the project bootstrap source
+
+## Native Feature Mapping
+
+How Ultra Framework maps to Claude Code's built-in capabilities.
+
+| Claude Code Feature | Ultra's Usage | Not Used / Reason |
+|---------------------|--------------|-------------------|
+| `CLAUDE.md` | Control kernel (<700 words) | — |
+| `.claude/rules/` | State machine + routing (always-loaded) | — |
+| `.claude/skills/` | Pull-based phase documents (`disable-model-invocation: true`) | — |
+| `.claude/commands/` | 7 slash commands (`/status`, `/gate`, `/tutorial`, etc.) | — |
+| `.claude/agents/` | 10 bounded specialist roles (frontmatter enriched) | — |
+| `.claude/settings.json` / `settings.local.json` | Hook registration (PaC). Quick Start recommends `settings.local.json` | — |
+| `EnterPlanMode` | — | **Not used.** Framework phases replace it; explicitly prohibited in CLAUDE.md |
+| `TodoWrite` / `TaskCreate` | Session-local subtask management only (subagent-dev skill) | Persistent state lives in STATUS.md, not task lists |
+| Auto-memory | Personal preferences only | Technical lessons belong in `docs/LEARNINGS.md` |
+| Context compaction | Controlled by PreCompact hook | Blocked when STATUS.md is stale |
 
 ## Quick Start
 
@@ -93,6 +123,7 @@ pull-based loading). Project CLAUDE.md references skills by name.
 | `/validate` | Run tiered framework evaluation |
 | `/next` | Show next action and phase transition suggestions |
 | `/retro` | Generate retrospective report |
+| `/tutorial` | Phase transition walkthrough guide |
 
 **Hooks** (`hooks/`) enforce framework rules at runtime:
 
@@ -192,7 +223,7 @@ python3 scripts/check_status.py --root . --strict
 
 ## Extensions
 
-Optional addons that are not included in `setup.sh` profiles. Copy manually.
+Optional addons (manual opt-in) that are not included in `setup.sh` profiles. Copy manually.
 
 ### qa-browser
 
