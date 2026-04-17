@@ -29,3 +29,7 @@
 - [confidence:8] agent の skills preload を追加する際は profile 定義（templates/profiles/*.json）も同時に更新しないと scaffold drift が起きる。
 - [confidence:8] MCP テンプレートは npx に `-y` フラグを付けないと初回起動時の対話プロンプトで止まる。ワークスペース内の既存例に合わせること。
 - [confidence:7] extensions/ に配置する設定テンプレートは、実サーバー接続検証まではスコープに含めにくい。構造検証と実接続検証を明示的に分けて記録すべき。
+- [confidence:9] `update-gate.sh` は `current_refs.<gate>` を "approved" 文字列で上書きする。ゲート承認後に手動で正しいファイルパスを復元する必要がある。将来のバージョンで修正すべきバグ。
+- [confidence:8] contract validator のエージェント構造チェック（hallucination guard, turn limit）は大文字小文字を区別する。"Do not" ではなく "do not"、"Complete" ではなく "complete" で書く必要がある。
+- [confidence:8] standard profile は Dev-lean に保つべき。Client 専用 artifact（docs/client/, docs/translation/）を standard に含めると、対応する skill/agent なしでは不整合になる。Client 機能は full profile に集約する。
+- [confidence:7] 大規模変更（L サイズ）の実装は Phase 分割+並列サブエージェントが効果的。v0.8.0 では 18 タスクを 6 フェーズに分割し、各フェーズ内で最大 5 並列実行した。

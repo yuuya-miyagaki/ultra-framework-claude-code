@@ -162,6 +162,32 @@ python3 scripts/check_status.py --root . --strict
 
 ## Migration
 
+### From v0.7.3 to v0.8.0
+
+1. **translation-specialist agent added**: new `.claude/agents/translation-specialist.md`
+   supports Client→Dev handover translation; copy to your project's `.claude/agents/`
+2. **translation-mapping skill added**: new `.claude/skills/translation-mapping/SKILL.md`
+   guides creation of `docs/translation/mapping.md`; copy to your project's `.claude/skills/`
+3. **check-client-info.sh hook added**: new `hooks/check-client-info.sh` denies
+   requirements edits in Client mode when `docs/client/context.md` is absent;
+   copy to `hooks/` and register in PreToolUse `Edit|Write|NotebookEdit` matcher
+4. **Client directories added**: create `docs/client/`, `docs/translation/`,
+   `docs/decisions/` in your project; scaffold with `bin/setup.sh --profile=full`
+5. **Client templates added**: 5 new templates in `templates/`:
+   `CLIENT-CONTEXT.template.md`, `CLIENT-GLOSSARY.template.md`,
+   `CLIENT-OPEN-QUESTIONS.template.md`, `TRANSLATION-MAPPING.template.md`,
+   `HANDOVER-TO-DEV.template.md` (updated)
+6. **state-machine.md updated**: Client mode purpose statement added
+7. **client-workflow SKILL.md updated**: Translation Artifact section added
+   with `docs/translation/mapping.md` handover prerequisite
+8. **session-start.sh updated**: handover phase hint split from acceptance;
+   includes mapping.md requirement note
+9. **STATUS.md schema**: add `translation: null` to `current_refs`
+10. **Gate contract expanded**: `client_ready_for_dev` gate now checks
+    `docs/translation/mapping.md` existence via `check_status.py`
+11. **CLAUDE.md Skills list**: `translation-mapping` added to the skill listing
+12. **Agent count**: 10 → 11 agents; Skill count: 12 → 13 skills
+
 ### From v0.7.2 to v0.7.3
 
 1. **qa-verification skill added**: new `.claude/skills/qa-verification/SKILL.md`

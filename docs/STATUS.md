@@ -3,7 +3,7 @@ framework: ultra-framework-claude-code
 framework_version: "0.8.0"
 project_name: "Ultra Framework Claude Code"
 mode: Dev
-phase: ship
+phase: docs
 task_type: framework
 task_size: L
 task_size_rationale: "Client モード強化。translation artifact, agent 1体, skill 1つ, hook 1つ, テンプレート3つ, ディレクトリ3つ, 既存ファイル多数更新。推定20ファイル。"
@@ -33,7 +33,7 @@ external_evidence:
     scope: "v0.8.0 Client モード強化 10ステップ提案"
     findings: "translation フェーズ新設提案、Agent 5体+Skill 6つ+Hook 4つの全面拡張案"
     resolution: "2名のレビューを経て最小拡張案に絞込み。translation は artifact-first、Agent 2→1体、Hook 4→1つ"
-next_action: "v0.8.0 ship フェーズ。全ゲート通過済み。コミット＋session_history 更新。"
+next_action: "v0.8.0 docs フェーズ完了。README migration + LEARNINGS 更新済み。コミット待ち。"
 blockers: []
 session_history:
   - date: "2026-04-16"
@@ -46,8 +46,8 @@ session_history:
     note: "v0.7.3 実装完了+コミット。qa-verification skill, agent skills preload, MCP catalog。レビュー指摘5件修正。"
   - date: "2026-04-17"
     mode: Dev
-    phase: "brainstorm"
-    note: "v0.8.0 Client モード強化 brainstorm 開始。10ステップ提案→2名レビュー→最小拡張案に収束。"
+    phase: "ship"
+    note: "v0.8.0 Client モード強化 実装+全ゲート通過+コミット+プッシュ。48ファイル変更。translation artifact必須化, agent/skill/hook/テンプレート追加。"
 ---
 
 ## Summary
@@ -70,4 +70,4 @@ check-client-info.sh hook 追加。
 
 - 2026-04-15: v0.7.0-v0.7.2 実装。ネイティブ機能改善、scaffold自己完結性、信頼境界ハードニング。
 - 2026-04-17: v0.7.3 実装完了+コミット。qa-verification skill, agent skills preload, MCP catalog。
-- 2026-04-17: v0.8.0 Client モード強化 brainstorm 開始。10ステップ提案→2名レビュー→最小拡張案。
+- 2026-04-17: v0.8.0 Client モード強化 実装完了+全ゲート通過+コミット+プッシュ (e186a18)。48ファイル変更。
