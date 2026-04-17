@@ -27,6 +27,8 @@ Phase transition suggestions:
 | acceptance | handover | - | client-workflow |
 | handover | (Dev) | client_ready_for_dev | - |
 
+> **Note:** handover 前に `docs/translation/mapping.md` が必要（gate チェックで検証）
+
 ### Dev mode
 
 | Current Phase | Next Gate | Next Phase | Skill |

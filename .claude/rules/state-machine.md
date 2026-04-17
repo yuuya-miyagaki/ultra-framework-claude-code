@@ -9,6 +9,10 @@ Mode gates:
 - `client_ready_for_dev`: required before entering `Dev`
 - `dev_ready_for_client`: required before handing back to `Client`
 
+Client mode purpose: structure client information, translate client
+language into functional specs and implementation hints, and produce
+a verified handover package for Dev mode.
+
 In `Client`, load the `client-workflow` skill.
 Only `client_ready_for_dev` moves work to `Dev`.
 

@@ -15,6 +15,7 @@
 - `docs/requirements/SCOPE.md`
 - `docs/requirements/NFR.md`
 - `docs/requirements/ACCEPTANCE.md`
+- `docs/translation/mapping.md`
 
 ## スコープ境界
 
@@ -41,6 +42,7 @@
 ## 未解決事項
 
 - なし / あれば記入
+- → `docs/client/open-questions.md` 参照
 
 ## 承認
 

@@ -48,7 +48,13 @@
     ".claude/agents/reviewer-performance.md",
     ".claude/agents/reviewer-testing.md",
     ".claude/agents/security.md",
-    ".claude/agents/ui.md"
+    ".claude/agents/ui.md",
+    ".claude/agents/translation-specialist.md",
+    ".claude/skills/translation-mapping/SKILL.md",
+    "docs/client/context.md",
+    "docs/client/glossary.md",
+    "docs/client/open-questions.md",
+    "docs/translation/mapping.md"
   ],
   "hooks_include": [
     "session-start.sh",
@@ -58,6 +64,7 @@
     "check-destructive.sh",
     "post-bash.sh",
     "post-status-audit.sh",
-    "pre-compact.sh"
+    "pre-compact.sh",
+    "check-client-info.sh"
   ]
 }

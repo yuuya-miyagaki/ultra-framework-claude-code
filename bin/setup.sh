@@ -53,6 +53,10 @@ resolve_source() {
     "docs/LEARNINGS.md") echo "$FRAMEWORK_ROOT/templates/LEARNINGS.template.md"; return ;;
     ".claude/commands/validate.md")
       echo "$FRAMEWORK_ROOT/examples/minimal-project/.claude/commands/validate.md"; return ;;
+    "docs/client/context.md")        echo "$FRAMEWORK_ROOT/templates/CLIENT-CONTEXT.template.md"; return ;;
+    "docs/client/glossary.md")       echo "$FRAMEWORK_ROOT/templates/CLIENT-GLOSSARY.template.md"; return ;;
+    "docs/client/open-questions.md") echo "$FRAMEWORK_ROOT/templates/CLIENT-OPEN-QUESTIONS.template.md"; return ;;
+    "docs/translation/mapping.md")   echo "$FRAMEWORK_ROOT/templates/TRANSLATION-MAPPING.template.md"; return ;;
   esac
   # Default: copy from framework root
   echo "$FRAMEWORK_ROOT/$rel_path"
@@ -229,6 +233,7 @@ copy_hooks "$PROFILE_JSON" "$TARGET"
 echo ""
 echo "--- Settings generation ---"
 mkdir -p "$TARGET/.claude"
+mkdir -p "$TARGET/docs/decisions"
 generate_settings "$PROFILE_JSON" "$TARGET"
 
 echo ""

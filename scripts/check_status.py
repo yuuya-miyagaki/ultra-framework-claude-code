@@ -27,7 +27,7 @@ REQUIRED_TOP_LEVEL_KEYS = [
     "session_history",
 ]
 
-OPTIONAL_TOP_LEVEL_KEYS: set[str] = {"task_size", "task_size_rationale", "iteration", "ui_surface", "external_evidence", "failure_tracking"}
+OPTIONAL_TOP_LEVEL_KEYS: set[str] = {"task_size", "task_size_rationale", "iteration", "ui_surface", "external_evidence", "failure_tracking", "client_context"}
 
 REQUIRED_APPROVAL_KEYS = [
     "client_ready_for_dev",
@@ -65,7 +65,7 @@ MODE_PHASES = {
 }
 # Ordered Dev phase sequence (source of truth for phase-order checks).
 DEV_PHASE_ORDER = ["brainstorm", "plan", "implement", "review", "qa", "security", "deploy", "ship", "docs"]
-EXPECTED_CURRENT_REF_KEYS = {"requirements", "plan", "spec", "review", "qa", "security", "deploy"}
+EXPECTED_CURRENT_REF_KEYS = {"requirements", "plan", "spec", "review", "qa", "security", "deploy", "translation"}
 ALLOWED_TASK_TYPES = {"feature", "refactor", "bugfix", "hotfix", "framework"}
 ALLOWED_TASK_SIZES = {"S", "M", "L"}
 # Phase flow constraints by task size.
@@ -307,6 +307,46 @@ def extract_failure_tracking(frontmatter: str) -> dict[str, str] | None:
     return fields if fields else None
 
 
+REQUIRED_CLIENT_CONTEXT_FIELDS = ["client_id", "context_loaded"]
+
+
+def extract_client_context(frontmatter: str) -> dict[str, str] | None:
+    """Extract client_context from frontmatter.
+
+    Expected format:
+        client_context:
+          client_id: "project-name"
+          context_loaded: true
+
+    ``client_context: null`` means not set (returns None).
+    """
+    in_block = False
+    fields: dict[str, str] = {}
+
+    for raw_line in frontmatter.splitlines():
+        line = raw_line.rstrip()
+        if not in_block:
+            header = re.match(r"^client_context:\s*(.*)$", line)
+            if header:
+                inline = header.group(1).strip()
+                if inline == "null" or inline == "":
+                    if inline == "null":
+                        return None
+                    in_block = True
+            continue
+
+        if not line.strip():
+            continue
+        if re.match(r"^\S", line):
+            break
+
+        field_match = re.match(r"^\s{2}([A-Za-z0-9_]+):\s*(.+)$", line)
+        if field_match:
+            fields[field_match.group(1)] = field_match.group(2).strip().strip('"')
+
+    return fields if fields else None
+
+
 REQUIRED_EVIDENCE_FIELDS = ["type", "scope", "findings", "resolution"]
 
 
@@ -495,7 +535,7 @@ def validate_status_file(path: Path) -> list[str]:
     req_value = refs.get("requirements")
     if req_value is not None and not isinstance(req_value, list):
         failures.append(f"{path} current_refs.requirements must be a list, got scalar: {req_value}")
-    for scalar_key in ["plan", "spec", "review", "qa", "security", "deploy"]:
+    for scalar_key in ["plan", "spec", "review", "qa", "security", "deploy", "translation"]:
         sv = refs.get(scalar_key)
         if isinstance(sv, list):
             failures.append(f"{path} current_refs.{scalar_key} must be scalar-or-null, got list")
@@ -591,6 +631,22 @@ def validate_status_file(path: Path) -> list[str]:
                 "does not follow kebab-case convention (e.g. 'codex-review-v071-1')"
             )
 
+    # Validate client_context (optional field).
+    if has_top_level_key(frontmatter, "client_context"):
+        cc = extract_client_context(frontmatter)
+        if cc is not None:
+            client_id = cc.get("client_id", "")
+            if not client_id:
+                print(
+                    f"WARNING: {path} client_context.client_id is empty "
+                    "(recommended to set a project identifier)"
+                )
+            context_loaded = cc.get("context_loaded", "")
+            if context_loaded not in ("true", "false"):
+                failures.append(
+                    f"{path} client_context.context_loaded must be true/false: {context_loaded}"
+                )
+
     # Validate failure_tracking (optional field).
     if has_top_level_key(frontmatter, "failure_tracking"):
         ft = extract_failure_tracking(frontmatter)
@@ -682,8 +738,17 @@ def pre_approve_gate(gate_name: str, root: Path) -> int:
     approvals = extract_approval_map(frontmatter)
     refs = extract_current_refs(frontmatter)
 
-    # Mode-transition gates skip context validation.
-    if gate_name in ("client_ready_for_dev", "dev_ready_for_client"):
+    # Mode-transition gates.
+    if gate_name == "dev_ready_for_client":
+        return 0
+
+    if gate_name == "client_ready_for_dev":
+        mapping_path = root / "docs" / "translation" / "mapping.md"
+        if not mapping_path.exists():
+            print("ERROR: docs/translation/mapping.md が見つかりません。")
+            print("       handover 前に translation mapping を作成してください。")
+            print("       → translation-mapping skill を使用")
+            return 1
         return 0
 
     # --- Phase order check ---

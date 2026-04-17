@@ -22,6 +22,10 @@
           {
             "type": "command",
             "command": "bash hooks/check-tdd.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash hooks/check-client-info.sh"
           }
         ]
       },

@@ -13,7 +13,7 @@ from check_status import validate_status_file
 
 ROOT = Path(__file__).resolve().parents[1]
 
-FRAMEWORK_VERSION = "0.7.3"
+FRAMEWORK_VERSION = "0.8.0"
 
 PROFILES_DIR = ROOT / "templates" / "profiles"
 VALID_PROFILES = ["minimal", "standard", "full"]
@@ -39,6 +39,7 @@ REQUIRED_AGENT_FILES = [
     ROOT / ".claude/agents/reviewer-testing.md",
     ROOT / ".claude/agents/reviewer-performance.md",
     ROOT / ".claude/agents/reviewer-maintainability.md",
+    ROOT / ".claude/agents/translation-specialist.md",
 ]
 
 REQUIRED_SKILL_FILES = [
@@ -55,6 +56,7 @@ REQUIRED_SKILL_FILES = [
     ROOT / ".claude/skills/security-review/SKILL.md",
     ROOT / ".claude/skills/docs-sync/SKILL.md",
     ROOT / ".claude/skills/qa-verification/SKILL.md",
+    ROOT / ".claude/skills/translation-mapping/SKILL.md",
 ]
 
 REQUIRED_RULES_FILES = [
@@ -91,6 +93,11 @@ REQUIRED_TEMPLATE_FILES = [
     ROOT / "templates/VERIFICATION.template.md",
     ROOT / "templates/DEPLOY-CHECKLIST.template.md",
     ROOT / "templates/SECOND-OPINION.template.md",
+    ROOT / "templates/CLIENT-CONTEXT.template.md",
+    ROOT / "templates/CLIENT-GLOSSARY.template.md",
+    ROOT / "templates/CLIENT-OPEN-QUESTIONS.template.md",
+    ROOT / "templates/TRANSLATION-MAPPING.template.md",
+    ROOT / "templates/DECISION.template.md",
     ROOT / "templates/hooks.template.json",
 ]
 
@@ -104,6 +111,7 @@ REQUIRED_HOOK_FILES = [
     ROOT / "hooks/pre-compact.sh",
     ROOT / "hooks/check-control-plane.sh",
     ROOT / "hooks/lib/extract-input.sh",
+    ROOT / "hooks/check-client-info.sh",
 ]
 
 REQUIRED_EXAMPLE_FILES = [
@@ -158,6 +166,11 @@ REQUIRED_EXAMPLE_FILES = [
     ROOT / "examples/minimal-project/hooks/pre-compact.sh",
     ROOT / "examples/minimal-project/hooks/check-control-plane.sh",
     ROOT / "examples/minimal-project/hooks/lib/extract-input.sh",
+    ROOT / "examples/minimal-project/docs/client/context.md",
+    ROOT / "examples/minimal-project/docs/client/glossary.md",
+    ROOT / "examples/minimal-project/docs/client/open-questions.md",
+    ROOT / "examples/minimal-project/docs/translation/mapping.md",
+    ROOT / "examples/minimal-project/hooks/check-client-info.sh",
 ]
 
 # Example skill directories — check SKILL.md exists in each.
@@ -165,6 +178,7 @@ REQUIRED_EXAMPLE_SKILL_DIRS = [
     "brainstorming", "bug-diagnosis", "client-workflow", "deploy",
     "docs-sync", "qa-verification", "review", "security-review",
     "session-recovery", "ship-and-docs", "subagent-dev", "tdd",
+    "translation-mapping",
 ]
 
 # Legacy skill files that should NOT exist (migrated to .claude/skills/ in v0.6.0).
@@ -491,6 +505,7 @@ def main() -> int:
                 "hooks/check-tdd.sh",
                 "hooks/check-control-plane.sh",
                 "hooks/check-destructive.sh",
+                "hooks/check-client-info.sh",
             ],
             "PostToolUse": [
                 "hooks/post-bash.sh",

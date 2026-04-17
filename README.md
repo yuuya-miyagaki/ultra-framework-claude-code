@@ -45,7 +45,7 @@ AI-assisted development workflows at scale.
 ultra-framework-claude-code/
 ├── CLAUDE.md                    # control kernel (~360 words)
 ├── .claude/
-│   ├── agents/                  # 10 bounded specialist roles
+│   ├── agents/                  # 11 bounded specialist roles
 │   ├── commands/                # slash commands (/status, /gate, etc.)
 │   ├── rules/                   # always-loaded rules (state-machine, routing)
 │   └── skills/                  # pull-based skill documents
@@ -81,7 +81,7 @@ How Ultra Framework maps to Claude Code's built-in capabilities.
 | `.claude/rules/` | State machine + routing (always-loaded) | — |
 | `.claude/skills/` | Pull-based phase documents (`disable-model-invocation: true`) | — |
 | `.claude/commands/` | 7 slash commands (`/status`, `/gate`, `/tutorial`, etc.) | — |
-| `.claude/agents/` | 10 bounded specialist roles (frontmatter enriched) | — |
+| `.claude/agents/` | 11 bounded specialist roles (frontmatter enriched) | — |
 | `.claude/settings.json` / `settings.local.json` | Hook registration (PaC). Quick Start recommends `settings.local.json` | — |
 | `EnterPlanMode` | — | **Not used.** Framework phases replace it; explicitly prohibited in CLAUDE.md |
 | `TodoWrite` / `TaskCreate` | Session-local subtask management only (subagent-dev skill) | Persistent state lives in STATUS.md, not task lists |

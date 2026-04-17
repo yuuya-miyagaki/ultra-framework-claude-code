@@ -98,8 +98,11 @@ fi
 # Phase-aware skill and rule hints.
 HINT=""
 case "$PHASE" in
-  onboard|discovery|requirements|scope|acceptance|handover)
+  onboard|discovery|requirements|scope|acceptance)
     HINT="skill: client-workflow"
+    ;;
+  handover)
+    HINT="skill: client-workflow / mapping.md必須(translation-mapping skill)"
     ;;
   brainstorm)
     if [ "$TASK_TYPE" = "bugfix" ] || [ "$TASK_TYPE" = "hotfix" ]; then

@@ -1,6 +1,6 @@
 ---
 framework: ultra-framework-claude-code
-framework_version: "0.7.3"
+framework_version: "0.8.0"
 project_name: ""
 mode: Client
 phase: onboard
@@ -28,8 +28,12 @@ current_refs:
   qa: null
   security: null
   deploy: null
+  translation: null
 # external_evidence.type は kebab-case 推奨（例: codex-review-v071-1）
 external_evidence: []
+client_context:
+  client_id: ""
+  context_loaded: false
 failure_tracking: null
 next_action: ""
 blockers: []

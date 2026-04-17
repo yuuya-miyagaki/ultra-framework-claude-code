@@ -25,7 +25,25 @@ user-invocable: false
 | 3 | **requirements** | `docs/requirements/PRD.md` | PRD の全セクションが埋まり、機能要件が列挙され、ユーザーが内容を承認 | PRD 承認後 `scope` へ |
 | 4 | **scope** | `docs/requirements/SCOPE.md`, `docs/requirements/NFR.md` | スコープ境界が明確で、NFR が定義され、ユーザーが承認 | SCOPE + NFR 承認後 `acceptance` へ |
 | 5 | **acceptance** | `docs/requirements/ACCEPTANCE.md` | 受入条件が機能要件・非機能要件と紐付き、判定基準が明確で、ユーザーが承認 | ACCEPTANCE 承認後 `handover` へ |
-| 6 | **handover** | `docs/handover/TO-DEV.md` | 引き渡し文書が正本ドキュメントを参照し、優先順位・リスク・未解決事項が記載され、ユーザーが承認 | HANDOVER 承認後、`client_ready_for_dev` ゲートを申請 |
+| 6 | **handover** | `docs/handover/TO-DEV.md`, `docs/translation/mapping.md` | 引き渡し文書が正本ドキュメントを参照し、優先順位・リスク・未解決事項が記載され、ユーザーが承認。translation mapping が作成済みであること | HANDOVER 承認後、`client_ready_for_dev` ゲートを申請 |
+
+## Translation Artifact
+
+handover フェーズに入る前に、`docs/translation/mapping.md` を作成すること。
+mapping.md はクライアント用語 → 機能仕様 → 実装ヒントの 3 層変換表。
+
+- テンプレート: `templates/TRANSLATION-MAPPING.template.md`
+- 支援 Agent: `translation-specialist`（mapping 作成・更新を委任可能）
+- 支援 Skill: `translation-mapping`（手順ガイド）
+- Gate 契約: `client_ready_for_dev` 承認時に mapping.md の存在がチェックされる
+
+### 関連ディレクトリ
+
+- `docs/client/context.md` — クライアント基本情報（onboard で作成）
+- `docs/client/glossary.md` — 用語集（discovery で作成）
+- `docs/client/open-questions.md` — 未解決事項（随時更新）
+- `docs/translation/mapping.md` — 3 層マッピング（handover 前に作成）
+- `docs/decisions/` — 意思決定ログ（随時作成）
 
 ## 運用ルール
 
@@ -56,6 +74,7 @@ user-invocable: false
 - `scope` で `docs/requirements/SCOPE.md` と `docs/requirements/NFR.md` を作成したら追加する。
 - `acceptance` で `docs/requirements/ACCEPTANCE.md` を作成したら追加する。
 - `handover` では requirements refs を維持し、`next_action` を handover 完了に合わせて更新する。
+- `handover` で `docs/translation/mapping.md` を作成したら、`current_refs.translation` に設定する。
 
 ### モード遷移ゲート
 

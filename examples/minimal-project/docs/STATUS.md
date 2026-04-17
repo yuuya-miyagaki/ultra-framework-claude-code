@@ -1,6 +1,6 @@
 ---
 framework: ultra-framework-claude-code
-framework_version: "0.7.3"
+framework_version: "0.8.0"
 project_name: "社内ナレッジ検索アシスタント"
 mode: Dev
 phase: docs
@@ -31,6 +31,7 @@ current_refs:
   qa: docs/qa-reports/search-qa.md
   security: docs/qa-reports/search-security.md
   deploy: null
+  translation: null
 next_action: "TO-CLIENT.md を共有し、Dev 完了を Client に handoff する。"
 blockers: []
 session_history:
