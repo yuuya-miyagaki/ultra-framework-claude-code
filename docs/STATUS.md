@@ -3,7 +3,7 @@ framework: ultra-framework-claude-code
 framework_version: "0.7.3"
 project_name: "Ultra Framework Claude Code"
 mode: Dev
-phase: deploy
+phase: docs
 task_type: framework
 task_size: L
 task_size_rationale: "3本柱（qa-verification skill, agent skills preload, MCP catalog）。新規+編集で16ファイル。全フェーズ必須。"
@@ -17,8 +17,8 @@ gate_approvals:
   review: approved
   qa: approved
   security: approved
-  deploy: pending
-  dev_ready_for_client: pending
+  deploy: approved
+  dev_ready_for_client: approved
 current_refs:
   requirements: []
   plan: docs/specs/skills-mcp-improvement-report.md
@@ -26,7 +26,7 @@ current_refs:
   review: docs/qa-reports/v073-review.md
   qa: docs/qa-reports/v073-qa.md
   security: docs/qa-reports/v073-security.md
-  deploy: null
+  deploy: docs/qa-reports/v073-deploy-checklist.md
 external_evidence:
   - type: "codex-review-v060-round-3"
     scope: "v0.6.0 example構造"
@@ -40,7 +40,7 @@ external_evidence:
     scope: "v0.6.0 validator深度+報告資料"
     findings: "P2x1 (command/settings意味的整合未検証), P3x1 (報告書+STATUS追随不足)"
     resolution: "command frontmatter検証+settings→hooks整合チェック追加、報告書+STATUS更新"
-next_action: "v0.7.3 Review/QA/Security 全 PASS。deploy フェーズ — コミット待ち。"
+next_action: "v0.7.3 完了。LEARNINGS 更新済み。ship/docs コミット待ち。"
 blockers: []
 session_history:
   - date: "2026-04-15"
@@ -88,4 +88,4 @@ Skills & MCP 改善: qa-verification スキル新設、エージェント skills
 - 2026-04-15: v0.6.0 Codex レビュー5ラウンド完了。gate承認経路分離、example自己完結化、validator深度強化。
 - 2026-04-15: v0.7.0-v0.7.2 実装。ネイティブ機能改善、scaffold自己完結性、信頼境界ハードニング。
 - 2026-04-16: v0.7.3 Skills & MCP 改善調査レポート作成。4フレームワーク比較+ギャップ分析。
-- 2026-04-17: v0.7.3 実装開始。3本柱実装中。
+- 2026-04-17: v0.7.3 実装完了+コミット。qa-verification skill, agent skills preload, MCP catalog。レビュー指摘5件修正。
