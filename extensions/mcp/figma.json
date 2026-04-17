@@ -1,0 +1,11 @@
+{
+  "figma": {
+    "command": "npx",
+    "args": ["-y", "figma-developer-mcp"],
+    "env": {
+      "FIGMA_API_KEY": "<your-token>"
+    },
+    "description": "Figma design reference via MCP. Metadata field — ignored by Claude Code.",
+    "recommended_phase": ["brainstorm", "implement"]
+  }
+}

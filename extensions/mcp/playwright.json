@@ -1,0 +1,8 @@
+{
+  "playwright": {
+    "command": "npx",
+    "args": ["-y", "@playwright/mcp"],
+    "description": "Browser QA and UI verification via Playwright MCP. Metadata field — ignored by Claude Code.",
+    "recommended_phase": ["qa"]
+  }
+}

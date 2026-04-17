@@ -38,6 +38,7 @@
     ".claude/skills/review/SKILL.md",
     ".claude/skills/security-review/SKILL.md",
     ".claude/skills/docs-sync/SKILL.md",
+    ".claude/skills/qa-verification/SKILL.md",
     ".claude/agents/implementer.md",
     ".claude/agents/planner.md",
     ".claude/agents/qa.md",

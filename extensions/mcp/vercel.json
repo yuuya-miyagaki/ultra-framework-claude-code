@@ -1,0 +1,8 @@
+{
+  "vercel": {
+    "type": "http",
+    "url": "https://mcp.vercel.com/sse",
+    "description": "Vercel deployment management via remote MCP. Metadata field — ignored by Claude Code.",
+    "recommended_phase": ["deploy"]
+  }
+}

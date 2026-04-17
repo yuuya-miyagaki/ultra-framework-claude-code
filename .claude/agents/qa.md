@@ -2,6 +2,8 @@
 description: "Trigger: review passed, ready for verification and evidence collection."
 maxTurns: 30
 readOnly: true
+skills:
+  - qa-verification
 model: inherit
 permissionMode: plan
 effort: high

@@ -162,6 +162,22 @@ python3 scripts/check_status.py --root . --strict
 
 ## Migration
 
+### From v0.7.2 to v0.7.3
+
+1. **qa-verification skill added**: new `.claude/skills/qa-verification/SKILL.md`
+   provides QA phase verification process (test execution, evidence collection,
+   reproduction templates); copy to your project's `.claude/skills/`
+2. **Agent skills preload unified**: `reviewer.md` now preloads `review`,
+   `security.md` preloads `security-review`, `qa.md` preloads `qa-verification`;
+   add `skills:` frontmatter to your agent files
+3. **MCP catalog added**: `extensions/mcp/` provides configuration templates
+   for 5 recommended MCP servers (Playwright, GitHub, Context7, Vercel, Figma);
+   copy needed `.json` files and merge into your `.mcp.json`
+4. **session-start.sh updated**: qa and security phase hints now include
+   skill references (`skill: qa-verification`, `skill: security-review`)
+5. **CLAUDE.md Skills list**: `qa-verification` added to the skill listing
+6. **Skill count**: 11 → 12 skills
+
 ### From v0.7.1 to v0.7.2
 
 1. **check-control-plane.sh added**: new Bash PreToolUse hook that denies

@@ -118,10 +118,10 @@ case "$PHASE" in
     HINT="skill: subagent-dev(レビュー) / Review Army: diff-scope分析でspecialist起動"
     ;;
   qa)
-    HINT="エビデンスなき完了なし / 再現・検証を実行せよ"
+    HINT="skill: qa-verification / エビデンスなき完了なし / 再現・検証を実行せよ"
     ;;
   security)
-    HINT="エビデンスなき完了なし / 残留リスクを記録せよ"
+    HINT="skill: security-review / エビデンスなき完了なし / 残留リスクを記録せよ"
     ;;
   deploy)
     HINT="skill: deploy / Security Blockers確認必須 / 3回失敗=ゴールベースカウント"

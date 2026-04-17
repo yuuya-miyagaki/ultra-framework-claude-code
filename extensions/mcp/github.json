@@ -1,0 +1,11 @@
+{
+  "github": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-github"],
+    "env": {
+      "GITHUB_PERSONAL_ACCESS_TOKEN": "<your-token>"
+    },
+    "description": "GitHub PR/Issue operations via MCP. Metadata field — ignored by Claude Code.",
+    "recommended_phase": ["deploy", "review"]
+  }
+}

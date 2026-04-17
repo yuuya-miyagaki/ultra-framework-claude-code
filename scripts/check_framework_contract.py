@@ -13,7 +13,7 @@ from check_status import validate_status_file
 
 ROOT = Path(__file__).resolve().parents[1]
 
-FRAMEWORK_VERSION = "0.7.2"
+FRAMEWORK_VERSION = "0.7.3"
 
 PROFILES_DIR = ROOT / "templates" / "profiles"
 VALID_PROFILES = ["minimal", "standard", "full"]
@@ -54,6 +54,7 @@ REQUIRED_SKILL_FILES = [
     ROOT / ".claude/skills/review/SKILL.md",
     ROOT / ".claude/skills/security-review/SKILL.md",
     ROOT / ".claude/skills/docs-sync/SKILL.md",
+    ROOT / ".claude/skills/qa-verification/SKILL.md",
 ]
 
 REQUIRED_RULES_FILES = [
@@ -162,7 +163,7 @@ REQUIRED_EXAMPLE_FILES = [
 # Example skill directories — check SKILL.md exists in each.
 REQUIRED_EXAMPLE_SKILL_DIRS = [
     "brainstorming", "bug-diagnosis", "client-workflow", "deploy",
-    "docs-sync", "review", "security-review",
+    "docs-sync", "qa-verification", "review", "security-review",
     "session-recovery", "ship-and-docs", "subagent-dev", "tdd",
 ]
 

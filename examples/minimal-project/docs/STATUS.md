@@ -1,6 +1,6 @@
 ---
 framework: ultra-framework-claude-code
-framework_version: "0.7.2"
+framework_version: "0.7.3"
 project_name: "社内ナレッジ検索アシスタント"
 mode: Dev
 phase: docs

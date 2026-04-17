@@ -2,6 +2,8 @@
 description: "Trigger: implementation complete, ready for pre-QA code review."
 maxTurns: 20
 readOnly: true
+skills:
+  - review
 model: inherit
 permissionMode: plan
 effort: high

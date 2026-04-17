@@ -2,6 +2,8 @@
 description: "Trigger: change touches auth, secrets, data exposure, or untrusted input."
 maxTurns: 20
 readOnly: true
+skills:
+  - security-review
 model: inherit
 permissionMode: plan
 effort: high
