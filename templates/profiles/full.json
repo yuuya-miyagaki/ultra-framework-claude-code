@@ -27,6 +27,8 @@
     "hooks/check-destructive.sh",
     "hooks/pre-compact.sh",
     "hooks/check-control-plane.sh",
+    "hooks/check-client-info.sh",
+    "hooks/check-secrets.sh",
     ".claude/skills/tdd/SKILL.md",
     ".claude/skills/subagent-dev/SKILL.md",
     ".claude/skills/brainstorming/SKILL.md",

@@ -125,6 +125,6 @@ skip する場合は `gate_approvals.brainstorm` を `n/a` に設定する。
 
 ## コンテキスト予算
 
-- このスキル内で開くドキュメントは `docs/STATUS.md` + 関連 refs の最大 3 つまで
+- L0 の `docs/STATUS.md` に加え、同時に開く refs は最大 3 つまで（CLAUDE.md Context Budget Policy 準拠）
 - 既存コードの調査は必要最小限にとどめる
 - ブレインストーミング記録は Step 6 で残す

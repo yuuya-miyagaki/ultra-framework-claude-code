@@ -5,6 +5,10 @@ readOnly: true
 skills:
   - review
 model: inherit
+disallowedTools:
+  - Edit
+  - Write
+  - NotebookEdit
 permissionMode: plan
 effort: high
 color: yellow

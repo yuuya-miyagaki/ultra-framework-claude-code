@@ -177,7 +177,9 @@ python3 scripts/check_status.py --root . --strict
    `[browser-assist, integration-assist]` (first multi-skill agent)
 5. **routing.md updated**: browser-assist availability note added
 6. **CLAUDE.md Skills list**: `browser-assist` added to the skill listing
-7. **Skill count**: 14 → 15 skills
+7. **extensions/qa-browser/WORKFLOW.md updated**: browser-assist priority
+   (`$B` preferred, Playwright MCP as fallback/diagnostics)
+8. **Skill count**: 14 → 15 skills
 
 ### From v0.8.0 to v0.9.0
 
@@ -300,8 +302,9 @@ Optional addons (manual opt-in) that are not included in `setup.sh` profiles. Co
 
 ### qa-browser
 
-Browser-based QA workflow using Playwright MCP. Provides a 4-step verification
-process: Snapshot → Interact → Verify → Evidence Capture.
+Browser-based QA workflow using browser-assist skill (`$B` preferred,
+Playwright MCP as fallback for navigation and diagnostics). Provides a 4-step
+verification process: Snapshot → Interact → Verify → Evidence Capture.
 
 ```bash
 cp -r extensions/qa-browser <your-project>/extensions/qa-browser

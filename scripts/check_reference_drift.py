@@ -59,6 +59,11 @@ def check_agents(root: Path) -> tuple[list[str], list[str]]:
     main_context = {"brainstorm"}
     referenced_agents = referenced - main_context
 
+    # Filter out skill names — routing.md may mention skills as context notes.
+    skills_dir = root / ".claude" / "skills"
+    actual_skills = _glob_dir_names(skills_dir)
+    referenced_agents = referenced_agents - actual_skills
+
     actual_agents = _glob_stems(agents_dir, "*.md")
 
     missing_files = referenced_agents - actual_agents
