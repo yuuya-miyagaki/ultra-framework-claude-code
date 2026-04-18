@@ -39,6 +39,10 @@
           {
             "type": "command",
             "command": "bash hooks/check-destructive.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash hooks/check-secrets.sh"
           }
         ]
       }

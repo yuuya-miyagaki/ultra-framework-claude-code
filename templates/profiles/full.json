@@ -50,7 +50,9 @@
     ".claude/agents/security.md",
     ".claude/agents/ui.md",
     ".claude/agents/translation-specialist.md",
+    ".claude/agents/integration-specialist.md",
     ".claude/skills/translation-mapping/SKILL.md",
+    ".claude/skills/integration-assist/SKILL.md",
     "docs/client/context.md",
     "docs/client/glossary.md",
     "docs/client/open-questions.md",
@@ -65,6 +67,7 @@
     "post-bash.sh",
     "post-status-audit.sh",
     "pre-compact.sh",
-    "check-client-info.sh"
+    "check-client-info.sh",
+    "check-secrets.sh"
   ]
 }

@@ -13,7 +13,7 @@ from check_status import validate_status_file
 
 ROOT = Path(__file__).resolve().parents[1]
 
-FRAMEWORK_VERSION = "0.8.0"
+FRAMEWORK_VERSION = "0.9.0"
 
 PROFILES_DIR = ROOT / "templates" / "profiles"
 VALID_PROFILES = ["minimal", "standard", "full"]
@@ -40,6 +40,7 @@ REQUIRED_AGENT_FILES = [
     ROOT / ".claude/agents/reviewer-performance.md",
     ROOT / ".claude/agents/reviewer-maintainability.md",
     ROOT / ".claude/agents/translation-specialist.md",
+    ROOT / ".claude/agents/integration-specialist.md",
 ]
 
 REQUIRED_SKILL_FILES = [
@@ -57,6 +58,7 @@ REQUIRED_SKILL_FILES = [
     ROOT / ".claude/skills/docs-sync/SKILL.md",
     ROOT / ".claude/skills/qa-verification/SKILL.md",
     ROOT / ".claude/skills/translation-mapping/SKILL.md",
+    ROOT / ".claude/skills/integration-assist/SKILL.md",
 ]
 
 REQUIRED_RULES_FILES = [
@@ -112,6 +114,7 @@ REQUIRED_HOOK_FILES = [
     ROOT / "hooks/check-control-plane.sh",
     ROOT / "hooks/lib/extract-input.sh",
     ROOT / "hooks/check-client-info.sh",
+    ROOT / "hooks/check-secrets.sh",
 ]
 
 REQUIRED_EXAMPLE_FILES = [
@@ -171,6 +174,9 @@ REQUIRED_EXAMPLE_FILES = [
     ROOT / "examples/minimal-project/docs/client/open-questions.md",
     ROOT / "examples/minimal-project/docs/translation/mapping.md",
     ROOT / "examples/minimal-project/hooks/check-client-info.sh",
+    ROOT / "examples/minimal-project/hooks/check-secrets.sh",
+    ROOT / "examples/minimal-project/.claude/agents/translation-specialist.md",
+    ROOT / "examples/minimal-project/.claude/agents/integration-specialist.md",
 ]
 
 # Example skill directories — check SKILL.md exists in each.
@@ -179,6 +185,7 @@ REQUIRED_EXAMPLE_SKILL_DIRS = [
     "docs-sync", "qa-verification", "review", "security-review",
     "session-recovery", "ship-and-docs", "subagent-dev", "tdd",
     "translation-mapping",
+    "integration-assist",
 ]
 
 # Legacy skill files that should NOT exist (migrated to .claude/skills/ in v0.6.0).
@@ -506,6 +513,7 @@ def main() -> int:
                 "hooks/check-control-plane.sh",
                 "hooks/check-destructive.sh",
                 "hooks/check-client-info.sh",
+                "hooks/check-secrets.sh",
             ],
             "PostToolUse": [
                 "hooks/post-bash.sh",

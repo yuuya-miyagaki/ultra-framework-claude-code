@@ -45,7 +45,7 @@ AI-assisted development workflows at scale.
 ultra-framework-claude-code/
 ├── CLAUDE.md                    # control kernel (~360 words)
 ├── .claude/
-│   ├── agents/                  # 11 bounded specialist roles
+│   ├── agents/                  # 12 bounded specialist roles
 │   ├── commands/                # slash commands (/status, /gate, etc.)
 │   ├── rules/                   # always-loaded rules (state-machine, routing)
 │   └── skills/                  # pull-based skill documents
@@ -81,7 +81,7 @@ How Ultra Framework maps to Claude Code's built-in capabilities.
 | `.claude/rules/` | State machine + routing (always-loaded) | — |
 | `.claude/skills/` | Pull-based phase documents (`disable-model-invocation: true`) | — |
 | `.claude/commands/` | 7 slash commands (`/status`, `/gate`, `/tutorial`, etc.) | — |
-| `.claude/agents/` | 11 bounded specialist roles (frontmatter enriched) | — |
+| `.claude/agents/` | 12 bounded specialist roles (frontmatter enriched) | — |
 | `.claude/settings.json` / `settings.local.json` | Hook registration (PaC). Quick Start recommends `settings.local.json` | — |
 | `EnterPlanMode` | — | **Not used.** Framework phases replace it; explicitly prohibited in CLAUDE.md |
 | `TodoWrite` / `TaskCreate` | Session-local subtask management only (subagent-dev skill) | Persistent state lives in STATUS.md, not task lists |
@@ -161,6 +161,20 @@ python3 scripts/check_status.py --root . --strict
 ```
 
 ## Migration
+
+### From v0.8.0 to v0.9.0
+
+1. **integration-specialist agent added**: new `.claude/agents/integration-specialist.md`
+   handles external service integration (API setup, OAuth, webhooks) with browser
+   automation via gstack `$B`; copy to your project's `.claude/agents/`
+2. **integration-assist skill added**: new `.claude/skills/integration-assist/SKILL.md`
+   guides service connection with 6-step workflow (identify → research → automate →
+   handoff → configure → test); copy to your project's `.claude/skills/`
+3. **routing.md updated**: `integration-specialist` route added
+4. **CLAUDE.md Skills list**: `integration-assist` added to the skill listing
+5. **Optional dependency**: gstack browse (`$B`) enables browser automation with
+   handoff/resume; skill falls back to guided text instructions when not installed
+6. **Agent count**: 11 → 12 agents; Skill count: 13 → 14 skills
 
 ### From v0.7.3 to v0.8.0
 

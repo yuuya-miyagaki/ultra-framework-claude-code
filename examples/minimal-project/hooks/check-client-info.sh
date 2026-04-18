@@ -47,5 +47,5 @@ if [ -f "$CLIENT_CONTEXT" ]; then
 fi
 
 # docs/client/context.md is missing: deny the edit.
-printf '{"decision":"deny","reason":"docs/client/context.md が見つかりません。requirements 編集の前にクライアント情報を記録してください。→ client-workflow skill の onboard フェーズを実行"}\n'
+printf '{"permissionDecision":"deny","message":"docs/client/context.md が見つかりません。requirements 編集の前にクライアント情報を記録してください。→ client-workflow skill の onboard フェーズを実行"}\n'
 exit 0
