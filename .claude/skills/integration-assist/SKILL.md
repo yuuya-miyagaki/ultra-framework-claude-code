@@ -1,6 +1,6 @@
 ---
 name: integration-assist
-description: "外部サービス連携ガイド。gstack $B によるブラウザ自動操作+handoff でユーザー工数を最小化"
+description: "外部サービス連携ガイド。browser-assist のブラウザ操作+handoff でユーザー工数を最小化"
 disable-model-invocation: true
 user-invocable: false
 ---
@@ -10,29 +10,14 @@ user-invocable: false
 > 外部サービス（Slack, Stripe, Firebase 等）の API 連携セットアップを
 > Claude Code が主導し、ユーザーの操作を最小限（パスワード入力・承認クリック）に抑える。
 
+**前提**: ブラウザ操作は **browser-assist** スキルに委譲。
+$B 解決・コマンド・フォールバックは browser-assist を参照。
+
 ## いつ使うか
 
 - プロジェクトに外部サービスを接続する必要がある場合
 - API キー・OAuth Token・Webhook URL の取得が必要な場合
 - ユーザーが非エンジニアで、サービス設定ページの操作に不安がある場合
-
-## 前提: $B バイナリ解決
-
-gstack browse がインストールされている場合、ブラウザ自動操作が可能。
-未インストール時はフォールバック（案内型）に切り替える。
-
-```bash
-# $B 解決ロジック（各 Bash ブロック冒頭で実行）
-_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
-B=""
-[ -n "$_ROOT" ] && [ -x "$_ROOT/.claude/skills/gstack/browse/dist/browse" ] && \
-  B="$_ROOT/.claude/skills/gstack/browse/dist/browse"
-[ -z "$B" ] && [ -x ~/.claude/skills/gstack/browse/dist/browse ] && \
-  B=~/.claude/skills/gstack/browse/dist/browse
-```
-
-- `$B` が見つかった場合 → **自動操作モード**（Step 3-4 でブラウザ操作）
-- `$B` が見つからない場合 → **案内モード**（URL + 手順をテキストで提示）
 
 ## ワークフロー
 
@@ -50,49 +35,31 @@ API ドキュメントを調査し、必要な情報を特定する。
 - セットアップ手順（設定ページ URL、必要なスコープ、コールバック URL）を把握
 - プロジェクトで使う SDK / ライブラリを特定
 
-### Step 3: ブラウザ自動操作（$B 利用時）
+### Step 3: ブラウザ操作
 
-```bash
-$B goto <サービスの設定ページ URL>
-$B snapshot -i                        # フォーム要素を検出
-$B fill @eN "<アプリ名>"              # アプリ名を自動入力
-$B fill @eN "<コールバック URL>"       # URL を自動入力
-$B fill @eN "<説明文>"                # 説明を自動入力
-# 選択肢がある場合
-$B select @eN "<オプション>"
-$B click @eN                          # 次へ進む
-```
+browser-assist のコマンドでサービス設定ページを操作する。
+アプリ名、コールバック URL、スコープ等をフォームに自動入力。
 
-**案内モードの場合**: 上記の代わりにテキストで手順を提示。
-コピペ用のテキスト（アプリ名、URL、スコープ等）を提供する。
+browser-assist が案内モードの場合はテキストで手順を提示し、
+コピペ用の値（アプリ名、URL、スコープ等）を提供する。
 
-### Step 4: handoff（ユーザー最小介入）
+### Step 4: 認証（ユーザー最小介入）
 
-```bash
-$B handoff "パスワードを入力して「Allow」ボタンを押してください"
-# → 可視ブラウザが開く（同じページ、同じ入力状態）
-# ← ユーザー: パスワード入力 / 承認クリック / 2FA のみ
-$B resume
-# → AI に制御復帰（Cookie・セッション完全保持）
-```
+browser-assist の handoff パターンでユーザーに認証を委譲。
+ユーザーはパスワード入力・承認クリック・2FA のみ。
 
-**案内モードの場合**: ユーザーに「○○の画面で承認してください。
+案内モードの場合はユーザーに「○○の画面で承認してください。
 完了したら教えてください」と伝え、待機する。
 
 ### Step 5: 結果取得 + 設定ファイル生成
 
-```bash
-$B snapshot                           # Token 表示ページを取得
-$B text @eN                           # Token/Key のテキストを抽出
-```
-
-取得した認証情報で設定ファイルを生成:
+browser-assist で Token/Key を抽出し、設定ファイルを生成:
 
 1. `.gitignore` に `.env` が含まれていることを確認（なければ先に追加）
 2. `.env` に Token/Key を書き込む
 3. 接続コードを実装（SDK インストール含む）
 
-**案内モードの場合**: ユーザーに Token を貼り付けてもらう。
+案内モードの場合はユーザーに Token を貼り付けてもらう。
 受領後は即座に `.env` に書き込み、以後の出力で値を再掲しない。
 
 ### Step 6: 接続テスト + 最終承認

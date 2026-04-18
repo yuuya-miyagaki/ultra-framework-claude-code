@@ -162,6 +162,23 @@ python3 scripts/check_status.py --root . --strict
 
 ## Migration
 
+### From v0.9.0 to v0.10.0
+
+1. **browser-assist skill added**: new `.claude/skills/browser-assist/SKILL.md`
+   provides shared browser automation foundation (gstack `$B` + Playwright MCP
+   fallback); any agent can load it via `skills:` frontmatter array
+2. **integration-assist refactored**: `$B` resolution logic and bash code blocks
+   moved to browser-assist; integration-assist now references browser-assist for
+   browser operations and focuses on service connection workflow
+3. **qa-browser agent updated**: now loads `browser-assist` skill; `$B` preferred
+   for navigation/interaction, Playwright MCP for console/network diagnostics;
+   `Bash` removed from `disallowedTools` (needed for `$B` commands)
+4. **integration-specialist agent updated**: `skills:` expanded to
+   `[browser-assist, integration-assist]` (first multi-skill agent)
+5. **routing.md updated**: browser-assist availability note added
+6. **CLAUDE.md Skills list**: `browser-assist` added to the skill listing
+7. **Skill count**: 14 → 15 skills
+
 ### From v0.8.0 to v0.9.0
 
 1. **integration-specialist agent added**: new `.claude/agents/integration-specialist.md`

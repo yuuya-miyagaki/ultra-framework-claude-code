@@ -13,7 +13,7 @@ from check_status import validate_status_file
 
 ROOT = Path(__file__).resolve().parents[1]
 
-FRAMEWORK_VERSION = "0.9.0"
+FRAMEWORK_VERSION = "0.10.0"
 
 PROFILES_DIR = ROOT / "templates" / "profiles"
 VALID_PROFILES = ["minimal", "standard", "full"]
@@ -59,6 +59,7 @@ REQUIRED_SKILL_FILES = [
     ROOT / ".claude/skills/qa-verification/SKILL.md",
     ROOT / ".claude/skills/translation-mapping/SKILL.md",
     ROOT / ".claude/skills/integration-assist/SKILL.md",
+    ROOT / ".claude/skills/browser-assist/SKILL.md",
 ]
 
 REQUIRED_RULES_FILES = [
@@ -186,6 +187,7 @@ REQUIRED_EXAMPLE_SKILL_DIRS = [
     "session-recovery", "ship-and-docs", "subagent-dev", "tdd",
     "translation-mapping",
     "integration-assist",
+    "browser-assist",
 ]
 
 # Legacy skill files that should NOT exist (migrated to .claude/skills/ in v0.6.0).

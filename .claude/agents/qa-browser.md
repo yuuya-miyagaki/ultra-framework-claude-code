@@ -6,11 +6,12 @@ model: inherit
 permissionMode: plan
 effort: high
 color: cyan
+skills:
+  - browser-assist
 disallowedTools:
   - Edit
   - Write
   - NotebookEdit
-  - Bash
 ---
 
 # QA Browser
@@ -34,22 +35,36 @@ write files. The QA agent is responsible for incorporating the results
 into the QA report.
 
 - structured browser check results (pass/fail per check with details)
-- screenshot paths captured via Playwright MCP (browser_take_screenshot)
+- screenshot paths captured via browser tools
 - console error listings and network error summaries
+
+## Browser Tool Priority
+
+1. Check if `$B` is available (browser-assist skill resolution logic).
+2. If `$B` available:
+   - Use `$B goto`, `$B snapshot`, `$B click` for navigation and interaction.
+   - Use `$B screenshot` for visual evidence capture.
+   - Use `$B handoff` if authenticated page access is required.
+3. If `$B` unavailable:
+   - Use Playwright MCP (browser_navigate, browser_snapshot, browser_click).
+4. Always use Playwright MCP for:
+   - Console error checks (browser_console_messages).
+   - Network error checks (browser_network_requests).
 
 ## Browser Checks
 
-- page render check (browser_snapshot / browser_take_screenshot)
+- page render check (snapshot / screenshot)
 - console error check (browser_console_messages)
 - network 4xx/5xx check (browser_network_requests)
-- key interaction verification (browser_click, browser_fill_form)
+- key interaction verification (click, fill)
 
 ## Boundaries
 
 - do not modify any project files
+- use Bash only for `$B` commands and read-only operations
 - do not redesign the feature
 - do not widen scope beyond the delegated checks
-- do not claim completion without having captured evidence via Playwright MCP
+- do not claim completion without having captured evidence via browser tools ($B or Playwright MCP)
 - complete within 20 turns; if not possible, summarize progress and return
 
 ## Known Rationalizations

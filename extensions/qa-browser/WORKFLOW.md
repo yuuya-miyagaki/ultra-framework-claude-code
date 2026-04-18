@@ -2,13 +2,18 @@
 
 4-step browser verification process for the `qa-browser` agent.
 
+The qa-browser agent uses browser-assist skill for tool resolution.
+When gstack `$B` is available, it is preferred for navigation and interaction.
+When `$B` is not installed, Playwright MCP tools are used as fallback.
+Console and network diagnostics always use Playwright MCP (no `$B` equivalent).
+
 ## Step 1: Snapshot
 
 Verify that the page renders correctly.
 
-- Navigate to the target URL
-- Capture an accessibility snapshot (`browser_snapshot`)
-- Take a screenshot (`browser_take_screenshot`) and save to `docs/qa-reports/`
+- Navigate to the target URL (`$B goto` or `browser_navigate`)
+- Capture an accessibility snapshot (`$B snapshot -i` or `browser_snapshot`)
+- Take a screenshot (`$B screenshot` or `browser_take_screenshot`) and save to `docs/qa-reports/`
 - Check that key elements are present in the snapshot
 
 **Pass criteria:** page loads without blank screen, key elements visible.
@@ -17,8 +22,8 @@ Verify that the page renders correctly.
 
 Execute key user interactions on the page.
 
-- Click primary actions (`browser_click`)
-- Fill forms if applicable (`browser_fill_form`)
+- Click primary actions (`$B click @eN` or `browser_click`)
+- Fill forms if applicable (`$B fill @eN "text"` or `browser_fill_form`)
 - Navigate between views if multi-page
 
 **Pass criteria:** interactions complete without errors, expected state changes occur.
@@ -26,6 +31,7 @@ Execute key user interactions on the page.
 ## Step 3: Verify
 
 Check for runtime errors and network issues.
+Always use Playwright MCP for this step (`$B` has no equivalent).
 
 - Retrieve console messages (`browser_console_messages` with level `error`)
 - Retrieve network requests (`browser_network_requests`)
@@ -38,7 +44,7 @@ Check for runtime errors and network issues.
 
 Package all evidence for the QA report.
 
-- Save final screenshot to `docs/qa-reports/`
+- Save final screenshot to `docs/qa-reports/` (`$B screenshot` or `browser_take_screenshot`)
 - Compile structured results: pass/fail per step with details
 - List console errors (if any) with summary
 - List network errors (if any) with status codes and endpoints

@@ -61,6 +61,9 @@ QA レポート完了前に以下を全て実施する:
 2. qa-browser エージェントに委譲する（ページ、操作、期待動作を指定）
 3. 返却されたエビデンスを QA レポートに統合する
 
+qa-browser は browser-assist スキルを使用。
+`$B` 利用可能時はブラウザ自動操作、未インストール時は Playwright MCP で検証。
+
 ## QA レポート出力
 
 - `docs/qa-reports/` に `QA-REPORT.template.md` を使用して配置
