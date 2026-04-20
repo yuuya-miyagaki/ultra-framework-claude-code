@@ -37,8 +37,9 @@ color: cyan
 
 When `STATUS.md` has `ui_surface: true`, delegate browser verification
 to the `qa-browser` agent. The qa-browser agent uses gstack `$B` (when
-available) for browser navigation and Playwright MCP for console/network
-diagnostics. Include in the delegation:
+available) for browser navigation, interaction, and diagnostics.
+When `$B` is unavailable, Playwright MCP is used as fallback.
+Include in the delegation:
 
 - which pages/states to verify
 - specific interactions to test

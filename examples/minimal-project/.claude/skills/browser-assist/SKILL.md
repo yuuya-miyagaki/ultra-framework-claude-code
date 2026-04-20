@@ -13,16 +13,17 @@ user-invocable: false
 
 ## $B バイナリ解決
 
-各 Bash ブロック冒頭で実行し、`$B` 変数にパスを設定する。
+各 Bash ブロック冒頭で resolver を実行する。snippet は最小限に保つ。
 
 ```bash
-_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
-B=""
-[ -n "$_ROOT" ] && [ -x "$_ROOT/.claude/skills/gstack/browse/dist/browse" ] && \
-  B="$_ROOT/.claude/skills/gstack/browse/dist/browse"
-[ -z "$B" ] && [ -x ~/.claude/skills/gstack/browse/dist/browse ] && \
-  B=~/.claude/skills/gstack/browse/dist/browse
+B="$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/gstack/browse/dist/browse"
+[ -x "$B" ] || B=~/.claude/skills/gstack/browse/dist/browse
+[ -x "$B" ] || B=""
 ```
+
+- 3行で解決完了
+- `git rev-parse` は1回のみ、サブシェル内でインライン評価
+- プロジェクトレベル → ユーザーレベル → 未検出 の優先順位は維持
 
 ## モード判定
 
@@ -69,10 +70,14 @@ $B resume
 | `screenshot` | `browser_take_screenshot` |
 | `handoff` | **代替なし** — ユーザーに自分のブラウザでの操作を依頼 |
 
-Playwright MCP 固有（$B に同等機能なし）:
+診断コマンド（$B / Playwright MCP 両対応）:
 
-- `browser_console_messages` — コンソールエラー確認
-- `browser_network_requests` — ネットワークエラー確認
+| 用途 | $B コマンド | Playwright MCP |
+|------|-----------|----------------|
+| コンソールエラー | `$B console --errors` | `browser_console_messages` (level `error`) |
+| ネットワークエラー | `$B network` | `browser_network_requests` |
+
+$B 利用可能時は $B を優先する。headers/body の深掘りが必要な場合のみ Playwright MCP。
 
 ## 安全ルール
 

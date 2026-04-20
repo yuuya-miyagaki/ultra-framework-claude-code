@@ -102,4 +102,12 @@ Git 戦略は Project Overrides に定義。未定義なら feature branch + squ
 - [ ] 全テスト pass
 - [ ] レビュー完了
 - [ ] <追加条件>
+## QA チェックリスト（ui_surface: true の場合）
+
+- [ ] <検証 URL とページ表示確認>
+- [ ] <主要操作>
+- [ ] コンソールエラーなし
+- [ ] ネットワーク 4xx/5xx なし
+- [ ] <受入条件との突合>
+
 <!-- exit-check: 全タスク分解・トレーサビリティ充足 → implement へ -->

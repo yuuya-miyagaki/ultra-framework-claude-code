@@ -47,15 +47,16 @@ into the QA report.
    - Use `$B handoff` if authenticated page access is required.
 3. If `$B` unavailable:
    - Use Playwright MCP (browser_navigate, browser_snapshot, browser_click).
-4. Always use Playwright MCP for:
-   - Console error checks (browser_console_messages).
-   - Network error checks (browser_network_requests).
+4. Console and network checks:
+   - `$B` available: `$B console --errors`, `$B network` (preferred).
+   - `$B` unavailable: `browser_console_messages` (level `error`), `browser_network_requests`.
+   - Deep inspection (response headers/body): Playwright MCP fallback.
 
 ## Browser Checks
 
 - page render check (snapshot / screenshot)
-- console error check (browser_console_messages)
-- network 4xx/5xx check (browser_network_requests)
+- console error check (`$B console --errors` or `browser_console_messages` level `error`)
+- network 4xx/5xx check (`$B network` or `browser_network_requests`)
 - key interaction verification (click, fill)
 
 ## Boundaries

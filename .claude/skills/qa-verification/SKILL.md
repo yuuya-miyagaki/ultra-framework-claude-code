@@ -64,6 +64,13 @@ QA レポート完了前に以下を全て実施する:
 qa-browser は browser-assist スキルを使用。
 `$B` 利用可能時はブラウザ自動操作、未インストール時は Playwright MCP で検証。
 
+## plan 事前チェックリスト
+
+plan に `## QA チェックリスト` が定義されている場合:
+1. そのリストを baseline として QA チェック項目に採用する
+2. QA 実行中に発見した不足項目は追加で起票できる（plan に縛られない）
+3. 追加項目には「plan 外追加」と明記する
+
 ## QA レポート出力
 
 - `docs/qa-reports/` に `QA-REPORT.template.md` を使用して配置
