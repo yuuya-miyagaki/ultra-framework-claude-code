@@ -57,9 +57,28 @@ for gate in client_ready_for_dev brainstorm plan review qa security deploy dev_r
   fi
 done
 
-# No tampering detected. Update snapshot to reflect legitimate changes.
+# --- Phase transition validation ---
+OLD_PHASE=$(grep -m1 "^phase:" "$SNAPSHOT_FILE" | sed "s/^phase:[[:space:]]*//" | sed 's/^"//;s/"$//' || true)
+NEW_PHASE=$(grep -m1 "^phase:" "$STATUS_FILE" | sed "s/^phase:[[:space:]]*//" | sed 's/^"//;s/"$//' || true)
+
+if [ -n "$OLD_PHASE" ] && [ -n "$NEW_PHASE" ] && [ "$OLD_PHASE" != "$NEW_PHASE" ]; then
+  # set +e: python returning non-zero is expected (deny) — must not abort before emitting JSON.
+  set +e
+  TRANSITION_CHECK=$(python3 "${ROOT}/scripts/check_status.py" --root "$ROOT" --check-phase-transition "$OLD_PHASE" "$NEW_PHASE" 2>&1)
+  TRANSITION_RC=$?
+  set -e
+  if [ $TRANSITION_RC -ne 0 ]; then
+    MSG=$(printf '%s' "$TRANSITION_CHECK" | tr '\n' ' ')
+    printf '{"permissionDecision":"deny","message":"[phase-skip] %s"}\n' "$MSG"
+    exit 0
+  fi
+fi
+
+# No tampering or invalid transition detected. Update snapshot to reflect legitimate changes.
 # Extract gate_approvals section for next comparison.
 sed -n '/^gate_approvals:/,/^[a-z]/{ /^gate_approvals:/p; /^  /p; }' "$STATUS_FILE" > "$SNAPSHOT_FILE" 2>/dev/null || true
+# Preserve phase in snapshot.
+grep -m1 "^phase:" "$STATUS_FILE" >> "$SNAPSHOT_FILE" 2>/dev/null || true
 
 echo '{}'
 exit 0

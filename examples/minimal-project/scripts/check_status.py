@@ -27,7 +27,7 @@ REQUIRED_TOP_LEVEL_KEYS = [
     "session_history",
 ]
 
-OPTIONAL_TOP_LEVEL_KEYS: set[str] = {"task_size", "task_size_rationale", "iteration", "ui_surface", "external_evidence", "failure_tracking"}
+OPTIONAL_TOP_LEVEL_KEYS: set[str] = {"task_size", "task_size_rationale", "iteration", "ui_surface", "external_evidence", "failure_tracking", "client_context"}
 
 REQUIRED_APPROVAL_KEYS = [
     "client_ready_for_dev",
@@ -63,7 +63,9 @@ MODE_PHASES = {
     "Client": {"onboard", "discovery", "requirements", "scope", "acceptance", "handover"},
     "Dev": {"brainstorm", "plan", "implement", "review", "qa", "security", "deploy", "ship", "docs"},
 }
-EXPECTED_CURRENT_REF_KEYS = {"requirements", "plan", "spec", "review", "qa", "security", "deploy"}
+# Ordered Dev phase sequence (source of truth for phase-order checks).
+DEV_PHASE_ORDER = ["brainstorm", "plan", "implement", "review", "qa", "security", "deploy", "ship", "docs"]
+EXPECTED_CURRENT_REF_KEYS = {"requirements", "plan", "spec", "review", "qa", "security", "deploy", "translation"}
 ALLOWED_TASK_TYPES = {"feature", "refactor", "bugfix", "hotfix", "framework"}
 ALLOWED_TASK_SIZES = {"S", "M", "L"}
 # Phase flow constraints by task size.
@@ -232,6 +234,38 @@ def extract_session_history(frontmatter: str) -> list[dict[str, str]]:
     return entries
 
 
+def extract_blockers(frontmatter: str) -> list[str]:
+    """Extract blocker items from frontmatter.
+
+    Handles both inline ``blockers: []`` and block form::
+
+        blockers:
+          - "item 1"
+          - "item 2"
+    """
+    blockers: list[str] = []
+    in_block = False
+    for line in frontmatter.splitlines():
+        stripped = line.rstrip()
+        if not in_block:
+            if stripped.startswith("blockers:"):
+                inline = stripped[len("blockers:"):].strip()
+                if inline == "[]":
+                    return []
+                if inline == "":
+                    in_block = True
+                    continue
+                blockers.append(inline.strip('"'))
+                return blockers
+            continue
+        s = stripped.strip()
+        if s.startswith("- "):
+            blockers.append(s[2:].strip().strip('"'))
+        elif s and not stripped.startswith(" "):
+            break
+    return blockers
+
+
 REQUIRED_FAILURE_TRACKING_FIELDS = ["goal", "count", "last_attempt"]
 
 
@@ -253,6 +287,46 @@ def extract_failure_tracking(frontmatter: str) -> dict[str, str] | None:
         line = raw_line.rstrip()
         if not in_block:
             header = re.match(r"^failure_tracking:\s*(.*)$", line)
+            if header:
+                inline = header.group(1).strip()
+                if inline == "null" or inline == "":
+                    if inline == "null":
+                        return None
+                    in_block = True
+            continue
+
+        if not line.strip():
+            continue
+        if re.match(r"^\S", line):
+            break
+
+        field_match = re.match(r"^\s{2}([A-Za-z0-9_]+):\s*(.+)$", line)
+        if field_match:
+            fields[field_match.group(1)] = field_match.group(2).strip().strip('"')
+
+    return fields if fields else None
+
+
+REQUIRED_CLIENT_CONTEXT_FIELDS = ["client_id", "context_loaded"]
+
+
+def extract_client_context(frontmatter: str) -> dict[str, str] | None:
+    """Extract client_context from frontmatter.
+
+    Expected format:
+        client_context:
+          client_id: "project-name"
+          context_loaded: true
+
+    ``client_context: null`` means not set (returns None).
+    """
+    in_block = False
+    fields: dict[str, str] = {}
+
+    for raw_line in frontmatter.splitlines():
+        line = raw_line.rstrip()
+        if not in_block:
+            header = re.match(r"^client_context:\s*(.*)$", line)
             if header:
                 inline = header.group(1).strip()
                 if inline == "null" or inline == "":
@@ -461,7 +535,7 @@ def validate_status_file(path: Path) -> list[str]:
     req_value = refs.get("requirements")
     if req_value is not None and not isinstance(req_value, list):
         failures.append(f"{path} current_refs.requirements must be a list, got scalar: {req_value}")
-    for scalar_key in ["plan", "spec", "review", "qa", "security", "deploy"]:
+    for scalar_key in ["plan", "spec", "review", "qa", "security", "deploy", "translation"]:
         sv = refs.get(scalar_key)
         if isinstance(sv, list):
             failures.append(f"{path} current_refs.{scalar_key} must be scalar-or-null, got list")
@@ -557,6 +631,22 @@ def validate_status_file(path: Path) -> list[str]:
                 "does not follow kebab-case convention (e.g. 'codex-review-v071-1')"
             )
 
+    # Validate client_context (optional field).
+    if has_top_level_key(frontmatter, "client_context"):
+        cc = extract_client_context(frontmatter)
+        if cc is not None:
+            client_id = cc.get("client_id", "")
+            if not client_id:
+                print(
+                    f"WARNING: {path} client_context.client_id is empty "
+                    "(recommended to set a project identifier)"
+                )
+            context_loaded = cc.get("context_loaded", "")
+            if context_loaded not in ("true", "false"):
+                failures.append(
+                    f"{path} client_context.context_loaded must be true/false: {context_loaded}"
+                )
+
     # Validate failure_tracking (optional field).
     if has_top_level_key(frontmatter, "failure_tracking"):
         ft = extract_failure_tracking(frontmatter)
@@ -623,14 +713,289 @@ def validate_with_pyyaml(text: str, path: Path) -> list[str]:
     return failures
 
 
+def pre_approve_gate(gate_name: str, root: Path) -> int:
+    """Check if a gate can be approved given current STATUS.md state.
+
+    Returns 0 if gate can be approved, 1 otherwise.
+    Uses PHASE_REQUIRES_GATES, SIZE_ALLOWED_PHASES, and gate_ref_mapping
+    as the single source of truth for gate approval contracts.
+    Called by update-gate.sh via --pre-approve-gate.
+    """
+    status_path = root / "docs" / "STATUS.md"
+    if not status_path.exists():
+        print("ERROR: docs/STATUS.md not found")
+        return 1
+
+    text = read_text(status_path)
+    frontmatter = extract_frontmatter(text)
+    if frontmatter is None:
+        print("ERROR: docs/STATUS.md is missing YAML frontmatter")
+        return 1
+
+    phase = extract_scalar_value(frontmatter, "phase")
+    task_type = extract_scalar_value(frontmatter, "task_type")
+    task_size = extract_scalar_value(frontmatter, "task_size")
+    approvals = extract_approval_map(frontmatter)
+    refs = extract_current_refs(frontmatter)
+
+    # Mode-transition gates.
+    if gate_name == "dev_ready_for_client":
+        return 0
+
+    if gate_name == "client_ready_for_dev":
+        mapping_path = root / "docs" / "translation" / "mapping.md"
+        if not mapping_path.exists():
+            print("ERROR: docs/translation/mapping.md が見つかりません。")
+            print("       handover 前に translation mapping を作成してください。")
+            print("       → translation-mapping skill を使用")
+            return 1
+        return 0
+
+    # --- Phase order check ---
+    if gate_name in DEV_PHASE_ORDER and phase in DEV_PHASE_ORDER:
+        gate_idx = DEV_PHASE_ORDER.index(gate_name)
+        phase_idx = DEV_PHASE_ORDER.index(phase)
+        if phase_idx < gate_idx:
+            print(f"ERROR: Cannot approve '{gate_name}' — current phase is '{phase}'.")
+            print(f"       This gate requires reaching at least the '{gate_name}' phase.")
+            return 1
+
+    # --- Prerequisite gates check ---
+    required_prior = list(PHASE_REQUIRES_GATES.get(gate_name, []))
+    if task_size and task_size in SIZE_ALLOWED_PHASES:
+        allowed_phases = SIZE_ALLOWED_PHASES[task_size]
+        required_prior = [g for g in required_prior if g in allowed_phases]
+    for prereq in required_prior:
+        prereq_val = approvals.get(prereq, "pending")
+        if prereq_val not in ("approved", "n/a"):
+            print(
+                f"ERROR: Cannot approve '{gate_name}' — prerequisite gate "
+                f"'{prereq}' is '{prereq_val}' (must be approved or n/a)."
+            )
+            return 1
+
+    # --- Strict gate enforcement ---
+    # feature/refactor/framework require specific prior gates to be approved
+    # (not n/a) at certain phases. Uses STRICT_GATE_TASK_TYPES and
+    # STRICT_GATE_BY_PHASE as source of truth (same as validate_status_file).
+    if task_type in STRICT_GATE_TASK_TYPES and task_size != "S":
+        strict_prereqs = list(STRICT_GATE_BY_PHASE.get(gate_name, []))
+        if task_size and task_size in SIZE_ALLOWED_PHASES:
+            allowed_phases = SIZE_ALLOWED_PHASES[task_size]
+            strict_prereqs = [g for g in strict_prereqs if g in allowed_phases]
+        for strict_gate in strict_prereqs:
+            gate_val = approvals.get(strict_gate, "pending")
+            if gate_val == "n/a":
+                print(
+                    f"ERROR: Cannot approve '{gate_name}' — task_type "
+                    f"'{task_type}' requires gate '{strict_gate}' to be "
+                    f"approved (not n/a)."
+                )
+                return 1
+
+    # --- Gate-ref consistency (WARNING only) ---
+    gate_ref_mapping = {
+        "plan": "plan",
+        "review": "review",
+        "qa": "qa",
+        "security": "security",
+        "deploy": "deploy",
+    }
+    if gate_name in gate_ref_mapping:
+        ref_key = gate_ref_mapping[gate_name]
+        ref_value = refs.get(ref_key)
+        ref_is_empty = ref_value is None or ref_value == "null" or ref_value == []
+        if ref_is_empty:
+            print(f"WARNING: Approving '{gate_name}' but current_refs.{ref_key} is empty.")
+            print(
+                "         Set the ref before running /validate to avoid a "
+                "check_status.py failure."
+            )
+
+    return 0
+
+
+def check_deploy_ready(root: Path) -> int:
+    """Check if deploy commands are allowed given current gate state.
+
+    Returns 0 if deploy is allowed, 1 otherwise.
+    Reuses PHASE_REQUIRES_GATES, STRICT_GATE_BY_PHASE, and
+    SIZE_ALLOWED_PHASES as the single source of truth for gate logic.
+    Called by check-deploy-gate.sh via --check-deploy-ready.
+    """
+    status_path = root / "docs" / "STATUS.md"
+    if not status_path.exists():
+        print("ERROR: docs/STATUS.md not found")
+        return 1
+
+    text = read_text(status_path)
+    frontmatter = extract_frontmatter(text)
+    if frontmatter is None:
+        print("ERROR: docs/STATUS.md is missing YAML frontmatter")
+        return 1
+
+    task_type = extract_scalar_value(frontmatter, "task_type")
+    task_size = extract_scalar_value(frontmatter, "task_size")
+    approvals = extract_approval_map(frontmatter)
+
+    # If deploy phase is not in the allowed phases for this task size, allow.
+    # (e.g. S skips deploy, M skips deploy.)
+    if task_size and task_size in SIZE_ALLOWED_PHASES:
+        if "deploy" not in SIZE_ALLOWED_PHASES[task_size]:
+            return 0
+
+    # Check prerequisite gates for deploy phase.
+    required_prior = list(PHASE_REQUIRES_GATES.get("deploy", []))
+    if task_size and task_size in SIZE_ALLOWED_PHASES:
+        allowed_phases = SIZE_ALLOWED_PHASES[task_size]
+        required_prior = [g for g in required_prior if g in allowed_phases]
+
+    missing = []
+    for prereq in required_prior:
+        prereq_val = approvals.get(prereq, "pending")
+        if prereq_val not in ("approved", "n/a"):
+            missing.append(f"'{prereq}' is '{prereq_val}'")
+
+    # Strict gate enforcement for feature/refactor/framework.
+    if task_type in STRICT_GATE_TASK_TYPES and task_size != "S":
+        strict_prereqs = list(STRICT_GATE_BY_PHASE.get("deploy", []))
+        if task_size and task_size in SIZE_ALLOWED_PHASES:
+            allowed_phases = SIZE_ALLOWED_PHASES[task_size]
+            strict_prereqs = [g for g in strict_prereqs if g in allowed_phases]
+        for strict_gate in strict_prereqs:
+            gate_val = approvals.get(strict_gate, "pending")
+            if gate_val == "n/a":
+                missing.append(
+                    f"'{strict_gate}' is 'n/a' (task_type '{task_type}' requires approved)"
+                )
+
+    if missing:
+        print("ERROR: Deploy is blocked — prerequisite gates not met:")
+        for m in missing:
+            print(f"  - {m}")
+        print("Approve required gates via /gate before deploying.")
+        return 1
+
+    return 0
+
+
+def check_phase_transition(old_phase: str, new_phase: str, root: Path) -> int:
+    """Validate that a phase transition is allowed.
+
+    Returns 0 if transition is valid, 1 otherwise.
+    Uses DEV_PHASE_ORDER, PHASE_REQUIRES_GATES, and SIZE_ALLOWED_PHASES
+    as the single source of truth. Dev phases only.
+    Called by post-status-audit.sh via --check-phase-transition.
+
+    Rules:
+    1. Non-Dev phases: always allowed.
+    2. Backward/same transitions: always allowed (rework).
+    3. Forward transitions: must go to the NEXT allowed phase
+       (per SIZE_ALLOWED_PHASES). Phase skipping is denied.
+    4. Prerequisite gates for the target phase must be met.
+    """
+    # Only validate Dev phase transitions.
+    if old_phase not in DEV_PHASE_ORDER or new_phase not in DEV_PHASE_ORDER:
+        return 0
+
+    status_path = root / "docs" / "STATUS.md"
+    if not status_path.exists():
+        print("ERROR: docs/STATUS.md not found")
+        return 1
+
+    text = read_text(status_path)
+    frontmatter = extract_frontmatter(text)
+    if frontmatter is None:
+        print("ERROR: docs/STATUS.md is missing YAML frontmatter")
+        return 1
+
+    task_size = extract_scalar_value(frontmatter, "task_size")
+    approvals = extract_approval_map(frontmatter)
+
+    old_idx = DEV_PHASE_ORDER.index(old_phase)
+    new_idx = DEV_PHASE_ORDER.index(new_phase)
+
+    # Backward or same transitions: always allowed (rework).
+    if new_idx <= old_idx:
+        return 0
+
+    # Forward transition: enforce adjacency.
+    # Build the allowed phase list for this task_size, in order.
+    if task_size and task_size in SIZE_ALLOWED_PHASES:
+        allowed = SIZE_ALLOWED_PHASES[task_size]
+    else:
+        allowed = set(DEV_PHASE_ORDER)
+
+    # Find the next allowed phase after old_phase.
+    allowed_after_old = [
+        p for p in DEV_PHASE_ORDER
+        if DEV_PHASE_ORDER.index(p) > old_idx and p in allowed
+    ]
+
+    if allowed_after_old and new_phase != allowed_after_old[0]:
+        next_allowed = allowed_after_old[0]
+        print(
+            f"ERROR: Phase skip detected: {old_phase}→{new_phase}."
+        )
+        print(
+            f"       Next allowed phase for task_size={task_size} is "
+            f"'{next_allowed}'. Advance to '{next_allowed}' first."
+        )
+        return 1
+
+    # Check that all prerequisite gates for new_phase are met.
+    required_prior = list(PHASE_REQUIRES_GATES.get(new_phase, []))
+    if task_size and task_size in SIZE_ALLOWED_PHASES:
+        allowed_phases = SIZE_ALLOWED_PHASES[task_size]
+        required_prior = [g for g in required_prior if g in allowed_phases]
+
+    missing = []
+    for prereq in required_prior:
+        prereq_val = approvals.get(prereq, "pending")
+        if prereq_val not in ("approved", "n/a"):
+            missing.append(f"'{prereq}' is '{prereq_val}'")
+
+    if missing:
+        print(
+            f"ERROR: Phase transition {old_phase}→{new_phase} blocked — "
+            f"prerequisite gates not met:"
+        )
+        for m in missing:
+            print(f"  - {m}")
+        print("Approve required gates via /gate before advancing phase.")
+        return 1
+
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", default=".", help="Project root containing docs/STATUS.md")
     parser.add_argument("--strict", action="store_true",
                         help="Enable PyYAML cross-validation (requires PyYAML)")
+    parser.add_argument("--pre-approve-gate", dest="pre_approve_gate", default=None,
+                        help="Check if a gate can be approved (used by update-gate.sh)")
+    parser.add_argument("--check-deploy-ready", dest="check_deploy_ready",
+                        action="store_true",
+                        help="Check if deploy commands are allowed (used by check-deploy-gate.sh)")
+    parser.add_argument("--check-phase-transition", dest="check_phase_transition",
+                        nargs=2, metavar=("OLD", "NEW"), default=None,
+                        help="Validate a phase transition (used by post-status-audit.sh)")
     args = parser.parse_args()
 
     root = Path(args.root).resolve()
+
+    if args.pre_approve_gate:
+        return pre_approve_gate(args.pre_approve_gate, root)
+
+    if args.check_deploy_ready:
+        return check_deploy_ready(root)
+
+    if args.check_phase_transition:
+        return check_phase_transition(
+            args.check_phase_transition[0], args.check_phase_transition[1], root
+        )
+
     status_path = root / "docs" / "STATUS.md"
     failures = validate_status_file(status_path)
 

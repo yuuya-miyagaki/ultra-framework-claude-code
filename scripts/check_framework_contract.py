@@ -13,7 +13,7 @@ from check_status import validate_status_file
 
 ROOT = Path(__file__).resolve().parents[1]
 
-FRAMEWORK_VERSION = "0.10.0"
+FRAMEWORK_VERSION = "0.11.0"
 
 PROFILES_DIR = ROOT / "templates" / "profiles"
 VALID_PROFILES = ["minimal", "standard", "full"]
@@ -116,6 +116,7 @@ REQUIRED_HOOK_FILES = [
     ROOT / "hooks/lib/extract-input.sh",
     ROOT / "hooks/check-client-info.sh",
     ROOT / "hooks/check-secrets.sh",
+    ROOT / "hooks/check-deploy-gate.sh",
 ]
 
 REQUIRED_EXAMPLE_FILES = [
@@ -176,6 +177,7 @@ REQUIRED_EXAMPLE_FILES = [
     ROOT / "examples/minimal-project/docs/translation/mapping.md",
     ROOT / "examples/minimal-project/hooks/check-client-info.sh",
     ROOT / "examples/minimal-project/hooks/check-secrets.sh",
+    ROOT / "examples/minimal-project/hooks/check-deploy-gate.sh",
     ROOT / "examples/minimal-project/.claude/agents/translation-specialist.md",
     ROOT / "examples/minimal-project/.claude/agents/integration-specialist.md",
 ]
@@ -516,6 +518,7 @@ def main() -> int:
                 "hooks/check-destructive.sh",
                 "hooks/check-client-info.sh",
                 "hooks/check-secrets.sh",
+                "hooks/check-deploy-gate.sh",
             ],
             "PostToolUse": [
                 "hooks/post-bash.sh",

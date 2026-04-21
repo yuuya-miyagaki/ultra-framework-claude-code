@@ -17,6 +17,8 @@ SNAPSHOT_DIR="${ROOT}/.claude"
 SNAPSHOT_FILE="${SNAPSHOT_DIR}/.gate-snapshot"
 mkdir -p "$SNAPSHOT_DIR"
 sed -n '/^gate_approvals:/,/^[a-z]/{ /^gate_approvals:/p; /^  /p; }' "$STATUS_FILE" > "$SNAPSHOT_FILE" 2>/dev/null || true
+# Save phase to snapshot (used by post-status-audit.sh for phase transition monitoring).
+grep -m1 "^phase:" "$STATUS_FILE" >> "$SNAPSHOT_FILE" 2>/dev/null || true
 
 # Extract a scalar value from YAML frontmatter.
 extract_value() {
@@ -73,11 +75,21 @@ if [ -f "$SECOND_OPINION_FILE" ]; then
   CONTEXT="${CONTEXT} | [BLOCKER] docs/second-opinion.md exists — read before proceeding"
 fi
 
-# Failure tracking detection.
+# Failure tracking detection with escalation.
 FT_COUNT=$(grep -A3 "^failure_tracking:" "$STATUS_FILE" | grep -m1 "count:" | sed 's/.*count:[[:space:]]*//' | sed 's/^"//;s/"$//' || true)
 if [ -n "$FT_COUNT" ] && [ "$FT_COUNT" != "null" ] && [ "$FT_COUNT" -ge 1 ] 2>/dev/null; then
   FT_GOAL=$(grep -A3 "^failure_tracking:" "$STATUS_FILE" | grep -m1 "goal:" | sed 's/.*goal:[[:space:]]*//' | sed 's/^"//;s/"$//' || true)
-  CONTEXT="${CONTEXT} | [WARNING] failure tracking active: ${FT_GOAL} (${FT_COUNT}/3)"
+  if [ "$FT_COUNT" -ge 3 ]; then
+    if [ -f "${ROOT}/docs/second-opinion.md" ]; then
+      CONTEXT="${CONTEXT} | [BLOCKER] second-opinion.md に基づいて対応してください"
+    else
+      CONTEXT="${CONTEXT} | [BLOCKER] 3回失敗ルール発動: ${FT_GOAL} → second-opinion.md を作成し、STATUS.md blockers に記録し、IDE chat を推奨してから停止してください"
+    fi
+  elif [ "$FT_COUNT" -ge 2 ]; then
+    CONTEXT="${CONTEXT} | [BLOCKER] failure tracking: ${FT_GOAL} (${FT_COUNT}/3) → 次の失敗で3回ルール発動。second-opinion.md 準備を検討してください"
+  else
+    CONTEXT="${CONTEXT} | [WARNING] failure tracking active: ${FT_GOAL} (${FT_COUNT}/3)"
+  fi
 fi
 
 # Stuck detection: phase stagnation (all session_history entries in same phase).
@@ -142,17 +154,32 @@ if [ -n "$HINT" ]; then
   CONTEXT="${CONTEXT} | ${HINT}"
 fi
 
-# Extract first 3 high-confidence learnings (confidence >= 8).
-# Format assumption: each learning is a single line starting with "- [confidence:N] ".
-# Multi-line learnings are truncated to the first line (by design).
+# Extract high-confidence learnings with phase-aware priority.
+# Format: "- [confidence:N] [phase:X] content" or "- [confidence:N] content".
+# Phase-matching entries (confidence >= 8) are shown first, then general (confidence >= 9).
 LEARNINGS_FILE="${ROOT}/docs/LEARNINGS.md"
 if [ -f "$LEARNINGS_FILE" ]; then
-  LEARNINGS=$(
-    grep -E '^[[:space:]]*-[[:space:]]*\[confidence:(8|9|10)\][[:space:]]+' "$LEARNINGS_FILE" \
-      | head -3 \
+  # Phase-aware: current phase matching entries (confidence >= 8), max 2.
+  PHASE_LEARNINGS=""
+  if [ -n "$PHASE" ]; then
+    PHASE_LEARNINGS=$(
+      grep -E "^[[:space:]]*-[[:space:]]*\[confidence:(8|9|10)\].*\[phase:${PHASE}\]" "$LEARNINGS_FILE" \
+        | head -2 \
+        | sed -E 's/^[[:space:]]*-[[:space:]]*\[confidence:[0-9]+\][[:space:]]*/- /' \
+        | sed -E 's/\[phase:[a-z]+\][[:space:]]*//' \
+        || true
+    )
+  fi
+  # Fallback: phase-tagless entries (confidence >= 9), max 1.
+  GENERAL_LEARNINGS=$(
+    grep -E '^[[:space:]]*-[[:space:]]*\[confidence:(9|10)\][[:space:]]+' "$LEARNINGS_FILE" \
+      | grep -v '\[phase:' \
+      | head -1 \
       | sed -E 's/^[[:space:]]*-[[:space:]]*\[confidence:[0-9]+\][[:space:]]+/- /' \
       || true
   )
+  LEARNINGS="${PHASE_LEARNINGS}${GENERAL_LEARNINGS:+ ${GENERAL_LEARNINGS}}"
+  LEARNINGS=$(printf '%s' "$LEARNINGS" | tr '\n' ' ' | sed 's/  */ /g')
   if [ -n "$LEARNINGS" ]; then
     CONTEXT="${CONTEXT} | learnings: ${LEARNINGS}"
   fi

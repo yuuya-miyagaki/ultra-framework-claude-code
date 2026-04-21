@@ -94,6 +94,8 @@ sed "s/\(  ${GATE_NAME}:\).*/\1 approved/" "$STATUS_FILE" > "$TMP" && mv "$TMP" 
 
 mkdir -p "$SNAPSHOT_DIR"
 sed -n '/^gate_approvals:/,/^[a-z]/{ /^gate_approvals:/p; /^  /p; }' "$STATUS_FILE" > "$SNAPSHOT_FILE" 2>/dev/null || true
+# Preserve phase in snapshot (used by post-status-audit.sh for phase transition monitoring).
+grep -m1 "^phase:" "$STATUS_FILE" >> "$SNAPSHOT_FILE" 2>/dev/null || true
 
 echo "[gate-approve] STATUS.md and .gate-snapshot updated."
 

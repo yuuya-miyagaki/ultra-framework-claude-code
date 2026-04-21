@@ -22,6 +22,8 @@ user-invocable: false
 - [ ] **Injection**: SQL, Command, XSS の入力パスを確認
 - [ ] **Broken Authentication**: 認証フロー・セッション管理の変更を確認
 - [ ] **Sensitive Data Exposure**: secrets in code, logs, 環境変数を確認
+  - 暗号化カラムを返す API: decrypt() / masking 処理が適用されているか確認
+  - API レスポンスに暗号文（Base64 / hex 等の非可読文字列）が含まれていないか確認
 - [ ] **Security Misconfiguration**: デフォルト設定・CORS・ヘッダーを確認
 - [ ] **Vulnerable Dependencies**: 依存パッケージの既知脆弱性を確認
 

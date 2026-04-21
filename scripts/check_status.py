@@ -815,6 +815,159 @@ def pre_approve_gate(gate_name: str, root: Path) -> int:
     return 0
 
 
+def check_deploy_ready(root: Path) -> int:
+    """Check if deploy commands are allowed given current gate state.
+
+    Returns 0 if deploy is allowed, 1 otherwise.
+    Reuses PHASE_REQUIRES_GATES, STRICT_GATE_BY_PHASE, and
+    SIZE_ALLOWED_PHASES as the single source of truth for gate logic.
+    Called by check-deploy-gate.sh via --check-deploy-ready.
+    """
+    status_path = root / "docs" / "STATUS.md"
+    if not status_path.exists():
+        print("ERROR: docs/STATUS.md not found")
+        return 1
+
+    text = read_text(status_path)
+    frontmatter = extract_frontmatter(text)
+    if frontmatter is None:
+        print("ERROR: docs/STATUS.md is missing YAML frontmatter")
+        return 1
+
+    task_type = extract_scalar_value(frontmatter, "task_type")
+    task_size = extract_scalar_value(frontmatter, "task_size")
+    approvals = extract_approval_map(frontmatter)
+
+    # If deploy phase is not in the allowed phases for this task size, allow.
+    # (e.g. S skips deploy, M skips deploy.)
+    if task_size and task_size in SIZE_ALLOWED_PHASES:
+        if "deploy" not in SIZE_ALLOWED_PHASES[task_size]:
+            return 0
+
+    # Check prerequisite gates for deploy phase.
+    required_prior = list(PHASE_REQUIRES_GATES.get("deploy", []))
+    if task_size and task_size in SIZE_ALLOWED_PHASES:
+        allowed_phases = SIZE_ALLOWED_PHASES[task_size]
+        required_prior = [g for g in required_prior if g in allowed_phases]
+
+    missing = []
+    for prereq in required_prior:
+        prereq_val = approvals.get(prereq, "pending")
+        if prereq_val not in ("approved", "n/a"):
+            missing.append(f"'{prereq}' is '{prereq_val}'")
+
+    # Strict gate enforcement for feature/refactor/framework.
+    if task_type in STRICT_GATE_TASK_TYPES and task_size != "S":
+        strict_prereqs = list(STRICT_GATE_BY_PHASE.get("deploy", []))
+        if task_size and task_size in SIZE_ALLOWED_PHASES:
+            allowed_phases = SIZE_ALLOWED_PHASES[task_size]
+            strict_prereqs = [g for g in strict_prereqs if g in allowed_phases]
+        for strict_gate in strict_prereqs:
+            gate_val = approvals.get(strict_gate, "pending")
+            if gate_val == "n/a":
+                missing.append(
+                    f"'{strict_gate}' is 'n/a' (task_type '{task_type}' requires approved)"
+                )
+
+    if missing:
+        print("ERROR: Deploy is blocked — prerequisite gates not met:")
+        for m in missing:
+            print(f"  - {m}")
+        print("Approve required gates via /gate before deploying.")
+        return 1
+
+    return 0
+
+
+def check_phase_transition(old_phase: str, new_phase: str, root: Path) -> int:
+    """Validate that a phase transition is allowed.
+
+    Returns 0 if transition is valid, 1 otherwise.
+    Uses DEV_PHASE_ORDER, PHASE_REQUIRES_GATES, and SIZE_ALLOWED_PHASES
+    as the single source of truth. Dev phases only.
+    Called by post-status-audit.sh via --check-phase-transition.
+
+    Rules:
+    1. Non-Dev phases: always allowed.
+    2. Backward/same transitions: always allowed (rework).
+    3. Forward transitions: must go to the NEXT allowed phase
+       (per SIZE_ALLOWED_PHASES). Phase skipping is denied.
+    4. Prerequisite gates for the target phase must be met.
+    """
+    # Only validate Dev phase transitions.
+    if old_phase not in DEV_PHASE_ORDER or new_phase not in DEV_PHASE_ORDER:
+        return 0
+
+    status_path = root / "docs" / "STATUS.md"
+    if not status_path.exists():
+        print("ERROR: docs/STATUS.md not found")
+        return 1
+
+    text = read_text(status_path)
+    frontmatter = extract_frontmatter(text)
+    if frontmatter is None:
+        print("ERROR: docs/STATUS.md is missing YAML frontmatter")
+        return 1
+
+    task_size = extract_scalar_value(frontmatter, "task_size")
+    approvals = extract_approval_map(frontmatter)
+
+    old_idx = DEV_PHASE_ORDER.index(old_phase)
+    new_idx = DEV_PHASE_ORDER.index(new_phase)
+
+    # Backward or same transitions: always allowed (rework).
+    if new_idx <= old_idx:
+        return 0
+
+    # Forward transition: enforce adjacency.
+    # Build the allowed phase list for this task_size, in order.
+    if task_size and task_size in SIZE_ALLOWED_PHASES:
+        allowed = SIZE_ALLOWED_PHASES[task_size]
+    else:
+        allowed = set(DEV_PHASE_ORDER)
+
+    # Find the next allowed phase after old_phase.
+    allowed_after_old = [
+        p for p in DEV_PHASE_ORDER
+        if DEV_PHASE_ORDER.index(p) > old_idx and p in allowed
+    ]
+
+    if allowed_after_old and new_phase != allowed_after_old[0]:
+        next_allowed = allowed_after_old[0]
+        print(
+            f"ERROR: Phase skip detected: {old_phase}→{new_phase}."
+        )
+        print(
+            f"       Next allowed phase for task_size={task_size} is "
+            f"'{next_allowed}'. Advance to '{next_allowed}' first."
+        )
+        return 1
+
+    # Check that all prerequisite gates for new_phase are met.
+    required_prior = list(PHASE_REQUIRES_GATES.get(new_phase, []))
+    if task_size and task_size in SIZE_ALLOWED_PHASES:
+        allowed_phases = SIZE_ALLOWED_PHASES[task_size]
+        required_prior = [g for g in required_prior if g in allowed_phases]
+
+    missing = []
+    for prereq in required_prior:
+        prereq_val = approvals.get(prereq, "pending")
+        if prereq_val not in ("approved", "n/a"):
+            missing.append(f"'{prereq}' is '{prereq_val}'")
+
+    if missing:
+        print(
+            f"ERROR: Phase transition {old_phase}→{new_phase} blocked — "
+            f"prerequisite gates not met:"
+        )
+        for m in missing:
+            print(f"  - {m}")
+        print("Approve required gates via /gate before advancing phase.")
+        return 1
+
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", default=".", help="Project root containing docs/STATUS.md")
@@ -822,12 +975,26 @@ def main() -> int:
                         help="Enable PyYAML cross-validation (requires PyYAML)")
     parser.add_argument("--pre-approve-gate", dest="pre_approve_gate", default=None,
                         help="Check if a gate can be approved (used by update-gate.sh)")
+    parser.add_argument("--check-deploy-ready", dest="check_deploy_ready",
+                        action="store_true",
+                        help="Check if deploy commands are allowed (used by check-deploy-gate.sh)")
+    parser.add_argument("--check-phase-transition", dest="check_phase_transition",
+                        nargs=2, metavar=("OLD", "NEW"), default=None,
+                        help="Validate a phase transition (used by post-status-audit.sh)")
     args = parser.parse_args()
 
     root = Path(args.root).resolve()
 
     if args.pre_approve_gate:
         return pre_approve_gate(args.pre_approve_gate, root)
+
+    if args.check_deploy_ready:
+        return check_deploy_ready(root)
+
+    if args.check_phase_transition:
+        return check_phase_transition(
+            args.check_phase_transition[0], args.check_phase_transition[1], root
+        )
 
     status_path = root / "docs" / "STATUS.md"
     failures = validate_status_file(status_path)
