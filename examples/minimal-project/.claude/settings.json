@@ -49,6 +49,15 @@
             "command": "bash hooks/check-deploy-gate.sh"
           }
         ]
+      },
+      {
+        "matcher": "mcp__.*__deploy.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash hooks/check-deploy-mcp-gate.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [

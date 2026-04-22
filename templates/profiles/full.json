@@ -67,6 +67,8 @@
     "check-tdd.sh",
     "check-control-plane.sh",
     "check-destructive.sh",
+    "check-deploy-gate.sh",
+    "check-deploy-mcp-gate.sh",
     "post-bash.sh",
     "post-status-audit.sh",
     "pre-compact.sh",

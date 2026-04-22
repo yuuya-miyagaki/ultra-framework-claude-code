@@ -185,6 +185,13 @@ if [ -f "$LEARNINGS_FILE" ]; then
   fi
 fi
 
+# STATUS.md health check (maintenance warnings).
+HEALTH_WARNINGS=$(python3 "${ROOT}/scripts/check_status.py" --root "$ROOT" --check-status-health 2>&1 || true)
+if [ -n "$HEALTH_WARNINGS" ]; then
+  HEALTH_SHORT=$(printf '%s' "$HEALTH_WARNINGS" | head -2 | tr '\n' '; ')
+  CONTEXT="${CONTEXT} | [MAINTENANCE] ${HEALTH_SHORT}"
+fi
+
 # Locale hint.
 CONTEXT="${CONTEXT} / ドキュメントは日本語"
 

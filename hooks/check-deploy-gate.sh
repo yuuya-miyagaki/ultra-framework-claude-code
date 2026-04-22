@@ -2,7 +2,7 @@
 # PreToolUse hook for Bash: blocks deploy commands when required gates are not approved.
 # Thin wrapper — delegates all gate logic to check_status.py --check-deploy-ready.
 # Covers major CLI deploy commands (vercel, firebase, netlify, npm/pnpm deploy).
-# MCP-based deploys are NOT covered; use deploy skill pre-checklist as defense-in-depth.
+# MCP-based deploys are covered by check-deploy-mcp-gate.sh (separate matcher).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

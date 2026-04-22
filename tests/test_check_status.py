@@ -36,16 +36,32 @@ def make_status_md(
     task_type: str = "feature",
     task_size: str = "L",
     approvals: dict[str, str] | None = None,
+    refs: dict[str, str] | None = None,
 ) -> str:
     """Generate a minimal STATUS.md frontmatter for testing."""
     gates = dict(DEFAULT_APPROVALS)
     if approvals:
         gates.update(approvals)
     gate_lines = "\n".join(f"  {k}: {v}" for k, v in gates.items())
+
+    default_refs = {
+        "requirements": "null",
+        "plan": "null",
+        "spec": "null",
+        "review": "null",
+        "qa": "null",
+        "security": "null",
+        "deploy": "null",
+        "translation": "null",
+    }
+    if refs:
+        default_refs.update(refs)
+    ref_lines = "\n".join(f"  {k}: {v}" for k, v in default_refs.items())
+
     return (
         f"---\n"
         f"framework: ultra-framework-claude-code\n"
-        f'framework_version: "0.11.0"\n'
+        f'framework_version: "0.12.0"\n'
         f"project_name: test\n"
         f"mode: Dev\n"
         f"phase: {phase}\n"
@@ -55,14 +71,7 @@ def make_status_md(
         f"gate_approvals:\n"
         f"{gate_lines}\n"
         f"current_refs:\n"
-        f"  requirements: null\n"
-        f"  plan: null\n"
-        f"  spec: null\n"
-        f"  review: null\n"
-        f"  qa: null\n"
-        f"  security: null\n"
-        f"  deploy: null\n"
-        f"  translation: null\n"
+        f"{ref_lines}\n"
         f"next_action: test\n"
         f"blockers: []\n"
         f"session_history: []\n"
@@ -348,6 +357,7 @@ class TempProjectWithHooks(TempProject):
         import shutil
         for hook_name in [
             "check-deploy-gate.sh",
+            "check-deploy-mcp-gate.sh",
             "post-status-audit.sh",
         ]:
             src = ROOT / "hooks" / hook_name
@@ -415,6 +425,284 @@ class TestDeployGateHookDenyJSON(unittest.TestCase):
             self.assertEqual(out, "{}")
 
 
+# =============================================================================
+# MCP deploy gate hook tests
+# =============================================================================
+
+
+class TestMCPDeployGateHook(unittest.TestCase):
+    """Verify check-deploy-mcp-gate.sh emits proper deny/allow JSON for MCP deploy tools."""
+
+    HOOK_NAME = "check-deploy-mcp-gate.sh"
+    # Vercel deploy MCP tool input.
+    VERCEL_DEPLOY_INPUT = '{"tool_name":"mcp__claude_ai_Vercel__deploy_to_vercel","tool_input":{"project_id":"xxx"}}'
+
+    def test_mcp_vercel_deploy_deny_json(self):
+        """MCP Vercel deploy with gates not met → deny JSON."""
+        content = make_status_md(
+            task_type="feature", task_size="L", phase="deploy",
+            approvals={"review": "pending"},
+        )
+        with TempProjectWithHooks(content) as root:
+            rc, out = run_hook(self.HOOK_NAME, root, self.VERCEL_DEPLOY_INPUT)
+            self.assertEqual(rc, 0, f"Hook should exit 0 even on deny, got rc={rc}")
+            self.assertIn('"permissionDecision":"deny"', out,
+                          f"Expected deny JSON, got: {out}")
+            self.assertIn("[deploy-gate-mcp]", out)
+
+    def test_mcp_vercel_deploy_allow_json(self):
+        """MCP Vercel deploy with all gates met → empty JSON (allow)."""
+        content = make_status_md(
+            task_type="feature", task_size="L", phase="deploy",
+            approvals={"review": "approved", "qa": "approved", "security": "approved"},
+        )
+        with TempProjectWithHooks(content) as root:
+            rc, out = run_hook(self.HOOK_NAME, root, self.VERCEL_DEPLOY_INPUT)
+            self.assertEqual(rc, 0)
+            self.assertEqual(out, "{}")
+
+    def test_mcp_deploy_small_task_allows(self):
+        """MCP deploy with task_size=S → allow (deploy phase skipped)."""
+        content = make_status_md(
+            task_type="feature", task_size="S", phase="review",
+            approvals={},
+        )
+        with TempProjectWithHooks(content) as root:
+            rc, out = run_hook(self.HOOK_NAME, root, self.VERCEL_DEPLOY_INPUT)
+            self.assertEqual(rc, 0)
+            self.assertEqual(out, "{}")
+
+    def test_matcher_covers_deploy_tools(self):
+        """Matcher regex must match known deploy MCP tool names."""
+        import re
+        matcher = re.compile(r"mcp__.*__deploy.*")
+        deploy_tools = [
+            "mcp__claude_ai_Vercel__deploy_to_vercel",
+            "mcp__claude_ai_Vercel__deploy_preview",
+            "mcp__firebase__deploy_hosting",
+        ]
+        for tool in deploy_tools:
+            self.assertRegex(tool, matcher, f"Matcher should cover: {tool}")
+
+    def test_matcher_excludes_non_deploy(self):
+        """Matcher regex must NOT match non-deploy MCP tool names."""
+        import re
+        matcher = re.compile(r"mcp__.*__deploy.*")
+        non_deploy_tools = [
+            "mcp__github__push_files",
+            "mcp__github__get_file_contents",
+            "mcp__github__create_pull_request",
+            "mcp__claude_ai_Vercel__list_deployments",
+            "mcp__claude_ai_Vercel__get_deployment",
+            "mcp__memory__create_entities",
+        ]
+        for tool in non_deploy_tools:
+            self.assertNotRegex(tool, matcher, f"Matcher should NOT cover: {tool}")
+
+    def test_matcher_valid_js_regex(self):
+        """All matchers in hooks.template.json must be valid JS RegExp and match
+        identically in both Python re and JS RegExp for known tool names.
+
+        This narrows (but does not close) the gap between unit-test regex
+        validation and Claude Code runtime behaviour, which evaluates matchers
+        as JS RegExp.
+        """
+        import json
+        import shutil
+        node = shutil.which("node")
+        if node is None:
+            self.skipTest("node not available — JS regex cross-check skipped")
+        template_path = ROOT / "templates" / "hooks.template.json"
+        with open(template_path, encoding="utf-8") as f:
+            template = json.load(f)
+        # Collect all matchers from the template.
+        matchers: list[str] = []
+        for _event, entries in template.get("hooks", {}).items():
+            for entry in entries:
+                m = entry.get("matcher")
+                if m:
+                    matchers.append(m)
+        self.assertTrue(len(matchers) > 0, "No matchers found in template")
+        # Cross-check: deploy matcher against known tool names via Node.js.
+        deploy_matcher = "mcp__.*__deploy.*"
+        self.assertIn(deploy_matcher, matchers)
+        test_cases = [
+            ("mcp__claude_ai_Vercel__deploy_to_vercel", True),
+            ("mcp__firebase__deploy_hosting", True),
+            ("mcp__github__push_files", False),
+            ("mcp__claude_ai_Vercel__list_deployments", False),
+        ]
+        js_code_parts = [f"const m = new RegExp({json.dumps(deploy_matcher)});"]
+        for tool_name, expected in test_cases:
+            js_code_parts.append(
+                f"if (m.test({json.dumps(tool_name)}) !== {str(expected).lower()}) "
+                f"{{ process.stderr.write('JS mismatch: {tool_name}\\n'); process.exit(1); }}"
+            )
+        js_code = "\n".join(js_code_parts)
+        result = subprocess.run(
+            [node, "-e", js_code], capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0,
+                         f"JS regex cross-check failed: {result.stderr.strip()}")
+
+
+# =============================================================================
+# --pre-approve-gate ref check tests
+# =============================================================================
+
+
+class TestPreApproveGateRefCheck(unittest.TestCase):
+    """Verify gate-ref consistency check emits DEPRECATION WARNING."""
+
+    def test_plan_gate_ref_empty_warns(self):
+        """Approving 'plan' with empty ref → DEPRECATION WARNING, return 0."""
+        content = make_status_md(
+            phase="plan", task_size="L",
+            approvals={"brainstorm": "approved"},
+            refs={"plan": "null"},
+        )
+        with TempProject(content) as root:
+            rc, out = run_check(root, "--pre-approve-gate", "plan")
+            self.assertEqual(rc, 0, f"Should still allow (deprecation), got: {out}")
+            self.assertIn("DEPRECATION WARNING", out)
+            self.assertIn("v0.13.0", out)
+
+    def test_plan_gate_ref_set_no_warning(self):
+        """Approving 'plan' with ref set → no warning."""
+        content = make_status_md(
+            phase="plan", task_size="L",
+            approvals={"brainstorm": "approved"},
+            refs={"plan": "docs/plans/my-plan.md"},
+        )
+        with TempProject(content) as root:
+            rc, out = run_check(root, "--pre-approve-gate", "plan")
+            self.assertEqual(rc, 0)
+            self.assertNotIn("DEPRECATION WARNING", out)
+
+    def test_review_gate_ref_empty_warns(self):
+        """Approving 'review' with empty ref → DEPRECATION WARNING."""
+        content = make_status_md(
+            phase="review", task_size="L",
+            approvals={"brainstorm": "approved", "plan": "approved"},
+            refs={"review": "null"},
+        )
+        with TempProject(content) as root:
+            rc, out = run_check(root, "--pre-approve-gate", "review")
+            self.assertEqual(rc, 0)
+            self.assertIn("DEPRECATION WARNING", out)
+
+    def test_deploy_gate_ref_empty_warns(self):
+        """Approving 'deploy' with empty ref → DEPRECATION WARNING."""
+        content = make_status_md(
+            phase="deploy", task_size="L",
+            approvals={
+                "brainstorm": "approved", "plan": "approved",
+                "review": "approved", "qa": "approved", "security": "approved",
+            },
+            refs={"deploy": "null"},
+        )
+        with TempProject(content) as root:
+            rc, out = run_check(root, "--pre-approve-gate", "deploy")
+            self.assertEqual(rc, 0)
+            self.assertIn("DEPRECATION WARNING", out)
+
+    def test_brainstorm_gate_no_ref_check(self):
+        """Approving 'brainstorm' (no ref mapping) → no warning."""
+        content = make_status_md(
+            phase="brainstorm", task_size="L",
+            approvals={},
+        )
+        with TempProject(content) as root:
+            rc, out = run_check(root, "--pre-approve-gate", "brainstorm")
+            self.assertEqual(rc, 0)
+            self.assertNotIn("DEPRECATION WARNING", out)
+
+    def test_existing_status_no_ref_migration(self):
+        """Existing STATUS.md with all refs null → can still approve gates (migration path)."""
+        content = make_status_md(
+            phase="review", task_size="L",
+            approvals={"brainstorm": "approved", "plan": "approved"},
+        )
+        with TempProject(content) as root:
+            rc, out = run_check(root, "--pre-approve-gate", "review")
+            # Must succeed (return 0) — this is the migration guarantee.
+            self.assertEqual(rc, 0, f"Migration path broken: {out}")
+
+
+# =============================================================================
+# --check-status-health tests
+# =============================================================================
+
+
+class TestStatusHealth(unittest.TestCase):
+    """Verify STATUS.md health check warnings."""
+
+    def test_fresh_status_no_warnings(self):
+        """Recently updated STATUS.md → no warnings."""
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        content = make_status_md(phase="implement")
+        # Replace the fixed date with now.
+        content = content.replace('"2026-01-01"', f'"{now}"')
+        with TempProject(content) as root:
+            rc, out = run_check(root, "--check-status-health")
+            self.assertEqual(rc, 0)
+            self.assertNotIn("HEALTH:", out)
+
+    def test_stale_last_updated_warns(self):
+        """last_updated 8 days ago → staleness warning."""
+        content = make_status_md(phase="implement")
+        # Default last_updated is "2026-01-01" which is very old.
+        with TempProject(content) as root:
+            rc, out = run_check(root, "--check-status-health")
+            self.assertEqual(rc, 0)
+            self.assertIn("HEALTH:", out)
+            self.assertIn("last_updated", out)
+
+    def test_boundary_7_days_no_warning(self):
+        """Exactly 7 days old → no staleness warning (boundary)."""
+        from datetime import datetime, timezone, timedelta
+        boundary = (datetime.now(timezone.utc) - timedelta(days=7)).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        )
+        content = make_status_md(phase="implement")
+        content = content.replace('"2026-01-01"', f'"{boundary}"')
+        with TempProject(content) as root:
+            rc, out = run_check(root, "--check-status-health")
+            self.assertEqual(rc, 0)
+            # 7 days is the boundary — should NOT warn.
+            self.assertNotIn("last_updated", out)
+
+    def test_max_evidence_warns(self):
+        """3 external_evidence entries → archive warning."""
+        content = make_status_md(phase="implement")
+        # Insert external_evidence with 3 dict entries before the closing ---.
+        evidence = (
+            "external_evidence:\n"
+            '  - type: "ev-1"\n'
+            '    scope: "scope-1"\n'
+            '  - type: "ev-2"\n'
+            '    scope: "scope-2"\n'
+            '  - type: "ev-3"\n'
+            '    scope: "scope-3"\n'
+        )
+        content = content.replace("session_history: []\n", f"session_history: []\n{evidence}")
+        with TempProject(content) as root:
+            rc, out = run_check(root, "--check-status-health")
+            self.assertEqual(rc, 0)
+            self.assertIn("HEALTH:", out)
+            self.assertIn("external_evidence", out)
+
+    def test_docs_phase_no_staleness_warn(self):
+        """phase=docs with stale date → no staleness warning (exempt)."""
+        content = make_status_md(phase="docs")
+        # Default "2026-01-01" is very old but docs phase is exempt.
+        with TempProject(content) as root:
+            rc, out = run_check(root, "--check-status-health")
+            self.assertEqual(rc, 0)
+            self.assertNotIn("last_updated", out)
+
+
 class TestPhaseSkipHookDenyJSON(unittest.TestCase):
     """Verify post-status-audit.sh emits proper deny JSON for phase skips."""
 
@@ -456,6 +744,56 @@ class TestPhaseSkipHookDenyJSON(unittest.TestCase):
             self.assertIn('"permissionDecision":"deny"', out,
                           f"Expected deny JSON for phase skip, got: {out}")
             self.assertIn("[phase-skip]", out)
+
+
+# =============================================================================
+# Profile hooks_include coverage tests
+# =============================================================================
+
+
+class TestProfileHooksInclude(unittest.TestCase):
+    """Verify profiles include deploy gate hooks so scaffolded projects are protected."""
+
+    PROFILES_DIR = ROOT / "templates" / "profiles"
+
+    def _load_hooks_include(self, profile_name: str) -> list[str]:
+        import json
+        profile_path = self.PROFILES_DIR / f"{profile_name}.json"
+        with open(profile_path, encoding="utf-8") as f:
+            data = json.load(f)
+        return data.get("hooks_include", [])
+
+    def test_full_profile_includes_deploy_gate(self):
+        """full.json hooks_include must contain check-deploy-gate.sh."""
+        hooks = self._load_hooks_include("full")
+        self.assertIn("check-deploy-gate.sh", hooks)
+
+    def test_full_profile_includes_mcp_deploy_gate(self):
+        """full.json hooks_include must contain check-deploy-mcp-gate.sh."""
+        hooks = self._load_hooks_include("full")
+        self.assertIn("check-deploy-mcp-gate.sh", hooks)
+
+    def test_deploy_hooks_in_template_have_profile_coverage(self):
+        """Every deploy-gate hook in hooks.template.json must appear in full profile."""
+        import json
+        template_path = ROOT / "templates" / "hooks.template.json"
+        with open(template_path, encoding="utf-8") as f:
+            template = json.load(f)
+        hooks = self._load_hooks_include("full")
+        deploy_scripts = []
+        # hooks.template.json: {"hooks": {"PreToolUse": [{matcher, hooks: [{command}]}]}}
+        for _event, entries in template.get("hooks", {}).items():
+            for entry in entries:
+                for hook_def in entry.get("hooks", []):
+                    cmd = hook_def.get("command", "")
+                    if "deploy" in cmd:
+                        script = cmd.split("hooks/")[-1] if "hooks/" in cmd else None
+                        if script:
+                            deploy_scripts.append(script)
+        self.assertTrue(len(deploy_scripts) > 0, "No deploy hooks found in template")
+        for script in deploy_scripts:
+            self.assertIn(script, hooks,
+                          f"Deploy hook {script} missing from full profile hooks_include")
 
 
 if __name__ == "__main__":

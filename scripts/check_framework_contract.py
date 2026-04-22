@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -13,7 +14,7 @@ from check_status import validate_status_file
 
 ROOT = Path(__file__).resolve().parents[1]
 
-FRAMEWORK_VERSION = "0.11.0"
+FRAMEWORK_VERSION = "0.12.0"
 
 PROFILES_DIR = ROOT / "templates" / "profiles"
 VALID_PROFILES = ["minimal", "standard", "full"]
@@ -26,6 +27,7 @@ REQUIRED_FILES = [
     ROOT / "docs/MIGRATION-FROM-v7.md",
     ROOT / "scripts/check_status.py",
     ROOT / "scripts/update-gate.sh",
+    ROOT / "scripts/lint_names.py",
 ]
 
 REQUIRED_AGENT_FILES = [
@@ -117,6 +119,7 @@ REQUIRED_HOOK_FILES = [
     ROOT / "hooks/check-client-info.sh",
     ROOT / "hooks/check-secrets.sh",
     ROOT / "hooks/check-deploy-gate.sh",
+    ROOT / "hooks/check-deploy-mcp-gate.sh",
 ]
 
 REQUIRED_EXAMPLE_FILES = [
@@ -178,6 +181,7 @@ REQUIRED_EXAMPLE_FILES = [
     ROOT / "examples/minimal-project/hooks/check-client-info.sh",
     ROOT / "examples/minimal-project/hooks/check-secrets.sh",
     ROOT / "examples/minimal-project/hooks/check-deploy-gate.sh",
+    ROOT / "examples/minimal-project/hooks/check-deploy-mcp-gate.sh",
     ROOT / "examples/minimal-project/.claude/agents/translation-specialist.md",
     ROOT / "examples/minimal-project/.claude/agents/integration-specialist.md",
 ]
@@ -519,6 +523,7 @@ def main() -> int:
                 "hooks/check-client-info.sh",
                 "hooks/check-secrets.sh",
                 "hooks/check-deploy-gate.sh",
+                "hooks/check-deploy-mcp-gate.sh",
             ],
             "PostToolUse": [
                 "hooks/post-bash.sh",
@@ -771,6 +776,25 @@ def main() -> int:
                 failures.append(
                     f"{path.relative_to(ROOT)} contains template placeholder: {token}"
                 )
+
+    # --- Name cross-reference lint ---
+    lint_result = subprocess.run(
+        ["python3", str(ROOT / "scripts/lint_names.py"), "--root", str(ROOT)],
+        capture_output=True,
+        text=True,
+    )
+    if lint_result.returncode != 0:
+        stdout_lines = lint_result.stdout.strip().splitlines()
+        if stdout_lines:
+            for line in stdout_lines:
+                failures.append(f"name-lint: {line}")
+        else:
+            # Crash with no stdout — include stderr or generic message.
+            stderr_msg = lint_result.stderr.strip()
+            if stderr_msg:
+                failures.append(f"name-lint: crashed: {stderr_msg[:200]}")
+            else:
+                failures.append("name-lint: exited with non-zero status but produced no output")
 
     if failures:
         for failure in failures:
