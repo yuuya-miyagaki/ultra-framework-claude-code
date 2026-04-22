@@ -246,7 +246,7 @@ def word_count(text: str) -> int:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Validate ultra-framework-claude-code contract",
+        description="Validate aegis contract",
     )
     parser.add_argument(
         "--profile",
@@ -799,7 +799,7 @@ def main() -> int:
             print(f"FAIL: {failure}")
         return 1
 
-    print("PASS: ultra-framework-claude-code contract is aligned")
+    print("PASS: aegis contract is aligned")
     return 0
 
 

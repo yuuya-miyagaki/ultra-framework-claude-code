@@ -1,7 +1,6 @@
-# Ultra Framework Claude Code
+# Aegis
 
-Ultra Framework Claude Code is a Claude Code native distribution of Ultra
-Framework v7 principles.
+Aegis is a Claude Code native distribution of Ultra Framework v7 principles.
 
 It keeps the strongest parts of v7:
 
@@ -42,7 +41,7 @@ AI-assisted development workflows at scale.
 ## Repository Structure
 
 ```text
-ultra-framework-claude-code/
+aegis/
 ├── CLAUDE.md                    # control kernel (~360 words)
 ├── .claude/
 │   ├── agents/                  # 12 bounded specialist roles
@@ -73,9 +72,9 @@ ultra-framework-claude-code/
 
 ## Native Feature Mapping
 
-How Ultra Framework maps to Claude Code's built-in capabilities.
+How Aegis maps to Claude Code's built-in capabilities.
 
-| Claude Code Feature | Ultra's Usage | Not Used / Reason |
+| Claude Code Feature | Aegis Usage | Not Used / Reason |
 |---------------------|--------------|-------------------|
 | `CLAUDE.md` | Control kernel (<700 words) | — |
 | `.claude/rules/` | State machine + routing (always-loaded) | — |
@@ -315,7 +314,7 @@ See [extensions/qa-browser/README.md](extensions/qa-browser/README.md) for detai
 ## Relationship to Ultra Framework v7
 
 - `ultra-framework-v7` remains the stable, host-neutral framework line
-- `ultra-framework-claude-code` is the Claude Code optimized distribution
+- `aegis` (formerly `ultra-framework-claude-code`) is the Claude Code optimized distribution
 - conceptual migration guidance lives in
   [docs/MIGRATION-FROM-v7.md](docs/MIGRATION-FROM-v7.md)
 

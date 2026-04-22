@@ -1,7 +1,7 @@
 # Minimal Project Example
 
 This example shows the intended happy path for a small Claude Code project
-using Ultra Framework Claude Code.
+using Aegis.
 
 ## Included
 

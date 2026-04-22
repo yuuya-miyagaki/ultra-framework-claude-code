@@ -1,7 +1,7 @@
 ---
-framework: ultra-framework-claude-code
+framework: aegis
 framework_version: "0.12.1"
-project_name: "Ultra Framework Claude Code"
+project_name: "Aegis"
 mode: Dev
 phase: review
 task_type: framework
@@ -53,7 +53,7 @@ session_history:
 
 ## Summary
 
-Claude Code ネイティブの Ultra Framework 運用フレームワーク。v0.12.0 では
+Claude Code ネイティブの Aegis 運用フレームワーク。v0.12.0 では
 MCP deploy gate hook、/gate ref チェック強化（DEPRECATION WARNING）、
 Skill/Agent/Command 名 lint、STATUS.md health check の 4 項目を実装。
 

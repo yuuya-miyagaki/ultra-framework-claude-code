@@ -1,6 +1,6 @@
 # MCP サーバーカタログ
 
-> Ultra Framework CC 推奨 MCP サーバー設定テンプレート集。
+> Aegis 推奨 MCP サーバー設定テンプレート集。
 > **extensions/ は core 契約外。manual opt-in で利用する。**
 
 ## 使い方

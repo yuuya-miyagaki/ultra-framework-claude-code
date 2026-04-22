@@ -16,8 +16,8 @@ Read `docs/STATUS.md` and display a formatted summary:
 Display as:
 
 ```
-Ultra Framework Status
-━━━━━━━━━━━━━━━━━━━━━
+Aegis Status
+━━━━━━━━━━━━
 Mode: {mode} | Phase: {phase} | Size: {task_size} | Iteration: {iteration}
 Task: {task_type}
 Next: {next_action}

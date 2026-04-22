@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ultra Framework Claude Code — Modular installer
+# Aegis — Modular installer
 # Usage: bin/setup.sh --profile=minimal|standard|full --target=<dir> [--force]
 set -euo pipefail
 
@@ -209,7 +209,7 @@ copy_hooks() {
 }
 
 # --- Main ---
-echo "Ultra Framework Setup"
+echo "Aegis Setup"
 echo "  Profile: $PROFILE"
 echo "  Target:  $TARGET"
 echo ""

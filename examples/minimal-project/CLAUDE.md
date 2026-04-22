@@ -1,4 +1,4 @@
-# Ultra Framework Claude Code
+# Aegis
 
 ## Operating Contract
 

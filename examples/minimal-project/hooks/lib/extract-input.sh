@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared input extraction library for Ultra Framework hooks.
+# Shared input extraction library for Aegis hooks.
 # Source this file: source "$(dirname "$0")/lib/extract-input.sh"
 
 # Extract file_path from Edit/Write/NotebookEdit tool_input JSON.

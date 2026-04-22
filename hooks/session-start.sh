@@ -57,7 +57,7 @@ fi
 TASK_SIZE=$(extract_value "task_size")
 
 # Build context message.
-CONTEXT="[Ultra Framework] mode=${MODE} phase=${PHASE}"
+CONTEXT="[Aegis] mode=${MODE} phase=${PHASE}"
 if [ -n "$TASK_SIZE" ]; then
   CONTEXT="${CONTEXT} size=${TASK_SIZE}"
 fi

@@ -1,5 +1,5 @@
 ---
-framework: ultra-framework-claude-code
+framework: aegis
 framework_version: "0.12.0"
 project_name: ""
 mode: Client

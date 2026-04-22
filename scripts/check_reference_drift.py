@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reference drift auto-lint for Ultra Framework Claude Code.
+"""Reference drift auto-lint for Aegis.
 
 Detects name/count/path mismatches between documentation surfaces and
 actual files.  Exits 1 on any FAIL, 0 on WARNING-only or clean.

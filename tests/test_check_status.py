@@ -61,7 +61,7 @@ def make_status_md(
 
     return (
         f"---\n"
-        f"framework: ultra-framework-claude-code\n"
+        f"framework: aegis\n"
         f'framework_version: "0.12.0"\n'
         f"project_name: test\n"
         f"mode: {mode}\n"

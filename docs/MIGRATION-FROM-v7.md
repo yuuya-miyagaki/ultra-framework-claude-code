@@ -1,4 +1,4 @@
-# Migration from Ultra Framework v7
+# Migration from Ultra Framework v7 to Aegis
 
 This guide maps the stable v7 concepts into the Claude Code native
 distribution.
@@ -13,7 +13,7 @@ distribution.
 
 ## What Changes
 
-| Ultra Framework v7 | Claude Code Edition |
+| Ultra Framework v7 | Aegis (Claude Code Edition) |
 |---|---|
 | `.agents/AGENTS.md` entrypoint | root `CLAUDE.md` |
 | broad host-neutral loading | Claude-native routing |
@@ -42,21 +42,21 @@ distribution.
 ### Entry Point
 
 - v7: start from `.agents/AGENTS.md`
-- Claude Code edition: start from `CLAUDE.md`
+- Aegis: start from `CLAUDE.md`
 
 ### Specialist Logic
 
 - v7: broad skill loading via `.agents/`
-- Claude Code edition: bounded specialist invocation via `.claude/agents/`
+- Aegis: bounded specialist invocation via `.claude/agents/`
 
 ### Current Work State
 
 - v7: flat key-value status index
-- Claude Code edition: compact frontmatter with `current_refs`,
+- Aegis: compact frontmatter with `current_refs`,
   `gate_approvals`, mode, phase, and next action
 
 ### Validation
 
 - v7: richer validator family oriented around the original contract
-- Claude Code edition: lighter validators focused on the control plane and
+- Aegis: lighter validators focused on the control plane and
   project scaffold integrity
