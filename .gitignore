@@ -1,2 +1,5 @@
 # Runtime artifacts
 .claude/.gate-snapshot
+
+# macOS
+.DS_Store

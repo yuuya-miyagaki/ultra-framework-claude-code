@@ -32,9 +32,19 @@ if [[ -z "$PROFILE" ]]; then
   exit 1
 fi
 
+VALID_PROFILES="minimal standard full"
+PROFILE_VALID=false
+for p in $VALID_PROFILES; do
+  [[ "$p" == "$PROFILE" ]] && PROFILE_VALID=true && break
+done
+if [[ "$PROFILE_VALID" == "false" ]]; then
+  echo "ERROR: Invalid profile '$PROFILE'. Valid profiles: $VALID_PROFILES" >&2
+  exit 1
+fi
+
 PROFILE_JSON="$FRAMEWORK_ROOT/templates/profiles/${PROFILE}.json"
 if [[ ! -f "$PROFILE_JSON" ]]; then
-  echo "ERROR: Profile not found: $PROFILE_JSON" >&2
+  echo "ERROR: Profile file not found: $PROFILE_JSON" >&2
   exit 1
 fi
 

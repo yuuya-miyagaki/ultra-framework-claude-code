@@ -84,7 +84,11 @@ def extract_contract_commands(contract_path: Path) -> set[str]:
 
 
 def extract_claude_md_skills(claude_md_path: Path) -> set[str]:
-    """Extract skill names from CLAUDE.md ## Skills section."""
+    """Extract skill names from CLAUDE.md ## Skills section.
+
+    Only parses bullet-list lines (``- name, name, ...``) to avoid
+    matching prose words in explanatory text.
+    """
     if not claude_md_path.exists():
         return set()
     text = claude_md_path.read_text(encoding="utf-8")
@@ -93,8 +97,19 @@ def extract_claude_md_skills(claude_md_path: Path) -> set[str]:
     )
     if not skills_section:
         return set()
-    # Extract hyphenated identifiers from the skills listing.
-    return set(re.findall(r"([a-z][\w-]+)", skills_section.group(1)))
+    names: set[str] = set()
+    for line in skills_section.group(1).splitlines():
+        # Only process bullet-list lines (e.g., "- brainstorming, tdd, deploy")
+        if not re.match(r"^\s*-\s+", line):
+            continue
+        # Strip the bullet prefix and split by comma.
+        items = re.sub(r"^\s*-\s+", "", line)
+        for item in items.split(","):
+            token = item.strip()
+            # Accept only kebab-case identifiers (skill names).
+            if re.fullmatch(r"[a-z][a-z0-9-]*", token):
+                names.add(token)
+    return names
 
 
 # ---------------------------------------------------------------------------

@@ -136,7 +136,7 @@ class TestCheckDeployReady(unittest.TestCase):
         with TempProject(content) as root:
             rc, out = run_check(root, "--check-deploy-ready")
             self.assertEqual(rc, 1, f"Expected deny, got: {out}")
-            self.assertIn("review", out)
+            self.assertIn("review", out, f"Deny reason should mention 'review': {out}")
 
     def test_feature_L_qa_pending_denies(self):
         """feature/L with qa=pending → deny."""
@@ -147,7 +147,7 @@ class TestCheckDeployReady(unittest.TestCase):
         with TempProject(content) as root:
             rc, out = run_check(root, "--check-deploy-ready")
             self.assertEqual(rc, 1, f"Expected deny, got: {out}")
-            self.assertIn("qa", out)
+            self.assertIn("qa", out, f"Deny reason should mention 'qa': {out}")
 
     def test_feature_S_allows_without_deploy_gates(self):
         """feature/S — deploy phase not in SIZE_ALLOWED_PHASES["S"] → allow."""
@@ -188,7 +188,7 @@ class TestCheckDeployReady(unittest.TestCase):
         with TempProject(content) as root:
             rc, out = run_check(root, "--check-deploy-ready")
             self.assertEqual(rc, 1, f"Expected deny (strict), got: {out}")
-            self.assertIn("n/a", out)
+            self.assertIn("n/a", out, f"Strict deny should mention 'n/a': {out}")
 
     def test_refactor_L_all_approved_allows(self):
         """refactor/L with all gates approved → allow."""
@@ -238,7 +238,7 @@ class TestCheckPhaseTransition(unittest.TestCase):
         with TempProject(content) as root:
             rc, out = run_check(root, "--check-phase-transition", "implement", "deploy")
             self.assertEqual(rc, 1, f"Expected deny, got: {out}")
-            self.assertIn("review", out)
+            self.assertIn("review", out, f"Deny should mention missing 'review' gate: {out}")
 
     def test_review_to_qa_review_approved_allows(self):
         """review→qa with review approved → allow."""
@@ -400,7 +400,7 @@ class TestDeployGateHookDenyJSON(unittest.TestCase):
             self.assertEqual(rc, 0, f"Hook should exit 0 even on deny, got rc={rc}")
             self.assertIn('"permissionDecision":"deny"', out,
                           f"Expected deny JSON, got: {out}")
-            self.assertIn("[deploy-gate]", out)
+            self.assertIn("[deploy-gate]", out, f"Deny message should include tag: {out}")
 
     def test_allow_emits_empty_json(self):
         """When all gates met, hook must emit empty JSON."""
@@ -448,7 +448,7 @@ class TestMCPDeployGateHook(unittest.TestCase):
             self.assertEqual(rc, 0, f"Hook should exit 0 even on deny, got rc={rc}")
             self.assertIn('"permissionDecision":"deny"', out,
                           f"Expected deny JSON, got: {out}")
-            self.assertIn("[deploy-gate-mcp]", out)
+            self.assertIn("[deploy-gate-mcp]", out, f"Deny message should include MCP tag: {out}")
 
     def test_mcp_vercel_deploy_allow_json(self):
         """MCP Vercel deploy with all gates met → empty JSON (allow)."""
@@ -564,8 +564,10 @@ class TestPreApproveGateRefCheck(unittest.TestCase):
         with TempProject(content) as root:
             rc, out = run_check(root, "--pre-approve-gate", "plan")
             self.assertEqual(rc, 0, f"Should still allow (deprecation), got: {out}")
-            self.assertIn("DEPRECATION WARNING", out)
-            self.assertIn("v0.13.0", out)
+            self.assertIn("DEPRECATION WARNING", out,
+                          f"Should show deprecation warning: {out}")
+            self.assertIn("v0.13.0", out,
+                          f"Should mention target version: {out}")
 
     def test_plan_gate_ref_set_no_warning(self):
         """Approving 'plan' with ref set → no warning."""
@@ -589,7 +591,8 @@ class TestPreApproveGateRefCheck(unittest.TestCase):
         with TempProject(content) as root:
             rc, out = run_check(root, "--pre-approve-gate", "review")
             self.assertEqual(rc, 0)
-            self.assertIn("DEPRECATION WARNING", out)
+            self.assertIn("DEPRECATION WARNING", out,
+                          f"review ref empty should warn: {out}")
 
     def test_deploy_gate_ref_empty_warns(self):
         """Approving 'deploy' with empty ref → DEPRECATION WARNING."""
@@ -604,7 +607,8 @@ class TestPreApproveGateRefCheck(unittest.TestCase):
         with TempProject(content) as root:
             rc, out = run_check(root, "--pre-approve-gate", "deploy")
             self.assertEqual(rc, 0)
-            self.assertIn("DEPRECATION WARNING", out)
+            self.assertIn("DEPRECATION WARNING", out,
+                          f"deploy ref empty should warn: {out}")
 
     def test_brainstorm_gate_no_ref_check(self):
         """Approving 'brainstorm' (no ref mapping) → no warning."""
@@ -656,8 +660,8 @@ class TestStatusHealth(unittest.TestCase):
         with TempProject(content) as root:
             rc, out = run_check(root, "--check-status-health")
             self.assertEqual(rc, 0)
-            self.assertIn("HEALTH:", out)
-            self.assertIn("last_updated", out)
+            self.assertIn("HEALTH:", out, f"Should have health warning: {out}")
+            self.assertIn("last_updated", out, f"Warning should mention staleness: {out}")
 
     def test_boundary_7_days_no_warning(self):
         """Exactly 7 days old → no staleness warning (boundary)."""
@@ -690,8 +694,9 @@ class TestStatusHealth(unittest.TestCase):
         with TempProject(content) as root:
             rc, out = run_check(root, "--check-status-health")
             self.assertEqual(rc, 0)
-            self.assertIn("HEALTH:", out)
-            self.assertIn("external_evidence", out)
+            self.assertIn("HEALTH:", out, f"Should have health warning: {out}")
+            self.assertIn("external_evidence", out,
+                          f"Warning should mention evidence archival: {out}")
 
     def test_docs_phase_no_staleness_warn(self):
         """phase=docs with stale date → no staleness warning (exempt)."""
@@ -743,7 +748,8 @@ class TestPhaseSkipHookDenyJSON(unittest.TestCase):
             self.assertEqual(rc, 0, f"Hook should exit 0 even on deny, got rc={rc}")
             self.assertIn('"permissionDecision":"deny"', out,
                           f"Expected deny JSON for phase skip, got: {out}")
-            self.assertIn("[phase-skip]", out)
+            self.assertIn("[phase-skip]", out,
+                          f"Deny message should include phase-skip tag: {out}")
 
 
 # =============================================================================

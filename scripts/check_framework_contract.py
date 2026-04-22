@@ -28,6 +28,10 @@ REQUIRED_FILES = [
     ROOT / "scripts/check_status.py",
     ROOT / "scripts/update-gate.sh",
     ROOT / "scripts/lint_names.py",
+    ROOT / "scripts/check_framework_contract.py",
+    ROOT / "scripts/retro_report.py",
+    ROOT / "scripts/run_eval.py",
+    ROOT / "scripts/status_doctor.py",
 ]
 
 REQUIRED_AGENT_FILES = [
@@ -512,68 +516,56 @@ def main() -> int:
         if not isinstance(hooks_config, dict):
             failures.append("hooks.template.json 'hooks' value is not an object")
             hooks_config = {}
-        # Map: event -> list of required command substrings.
-        REQUIRED_HOOK_REGISTRATIONS = {
-            "SessionStart": ["hooks/session-start.sh"],
-            "PreToolUse": [
-                "hooks/check-gate.sh",
-                "hooks/check-tdd.sh",
-                "hooks/check-control-plane.sh",
-                "hooks/check-destructive.sh",
-                "hooks/check-client-info.sh",
-                "hooks/check-secrets.sh",
-                "hooks/check-deploy-gate.sh",
-                "hooks/check-deploy-mcp-gate.sh",
-            ],
-            "PostToolUse": [
-                "hooks/post-bash.sh",
-                "hooks/post-status-audit.sh",
-            ],
-            "PreCompact": [
-                "hooks/pre-compact.sh",
-            ],
+        # Derive required hook scripts from REQUIRED_HOOK_FILES (single source of truth).
+        # lib/ helpers are not directly registered in hooks.template.json.
+        required_hook_scripts = {
+            p.name
+            for p in REQUIRED_HOOK_FILES
+            if p.parent == ROOT / "hooks" and p.suffix == ".sh"
         }
-        for event, required_commands in REQUIRED_HOOK_REGISTRATIONS.items():
-            event_entries = hooks_config.get(event, [])
+        # Collect all registered scripts from hooks.template.json.
+        registered_scripts: set[str] = set()
+        for event_name, event_entries in hooks_config.items():
             if not isinstance(event_entries, list):
                 failures.append(
-                    f"hooks.template.json {event} value is not an array"
+                    f"hooks.template.json {event_name} value is not an array"
                 )
                 continue
-            # Collect all command strings registered under this event.
-            registered_commands = []
             for entry in event_entries:
                 if not isinstance(entry, dict):
                     failures.append(
-                        f"hooks.template.json {event} contains non-object entry"
+                        f"hooks.template.json {event_name} contains non-object entry"
                     )
                     continue
                 hooks_list = entry.get("hooks", [])
                 if not isinstance(hooks_list, list):
                     failures.append(
-                        f"hooks.template.json {event} entry 'hooks' is not an array"
+                        f"hooks.template.json {event_name} entry 'hooks' is not an array"
                     )
                     continue
                 for hook in hooks_list:
                     if not isinstance(hook, dict):
                         failures.append(
-                            f"hooks.template.json {event} hook entry is not an object"
+                            f"hooks.template.json {event_name} hook entry is not an object"
                         )
                         continue
                     cmd = hook.get("command", "")
                     if not isinstance(cmd, str):
                         failures.append(
-                            f"hooks.template.json {event} hook command is not a string"
+                            f"hooks.template.json {event_name} hook command is not a string"
                         )
                         continue
                     if cmd:
-                        registered_commands.append(cmd)
-            for required_cmd in required_commands:
-                if not any(required_cmd in cmd for cmd in registered_commands):
-                    failures.append(
-                        f"hooks.template.json is missing '{required_cmd}' "
-                        f"registration under {event}"
-                    )
+                        # Extract script name from "bash hooks/script-name.sh"
+                        parts = cmd.rsplit("/", 1)
+                        if len(parts) == 2:
+                            registered_scripts.add(parts[-1])
+        # Check that every required hook is registered in the template.
+        for script in sorted(required_hook_scripts - registered_scripts):
+            failures.append(
+                f"hooks/{script} is in REQUIRED_HOOK_FILES but not registered "
+                f"in hooks.template.json"
+            )
 
     # Session-start hook must detect docs/second-opinion.md (PaC for failure rule).
     session_start_path = ROOT / "hooks/session-start.sh"
@@ -621,7 +613,7 @@ def main() -> int:
             failures.append(f"{rel} missing rationalization table (## Known Rationalizations)")
         # All agents must have maxTurns in frontmatter with matching boundary rule.
         # Scope regex to YAML frontmatter (between first --- pair) and body respectively.
-        fm_match = re.match(r"---\s*\n(.*?)\n---", text, re.DOTALL)
+        fm_match = re.match(r"---\s*\r?\n(.*?)\r?\n---", text, re.DOTALL)
         frontmatter_section = fm_match.group(1) if fm_match else ""
         body_section = text[fm_match.end():] if fm_match else text
         frontmatter_turns = re.search(r"maxTurns:\s*(\d+)", frontmatter_section)
@@ -659,7 +651,7 @@ def main() -> int:
             continue
         text = read_text(path)
         rel = path.relative_to(ROOT)
-        fm_match = re.match(r"---\s*\n(.*?)\n---", text, re.DOTALL)
+        fm_match = re.match(r"---\s*\r?\n(.*?)\r?\n---", text, re.DOTALL)
         if not fm_match:
             failures.append(f"{rel} missing YAML frontmatter")
             continue
@@ -674,7 +666,7 @@ def main() -> int:
             continue
         text = read_text(path)
         rel = path.relative_to(ROOT)
-        fm_match = re.match(r"---\s*\n(.*?)\n---", text, re.DOTALL)
+        fm_match = re.match(r"---\s*\r?\n(.*?)\r?\n---", text, re.DOTALL)
         if not fm_match:
             failures.append(f"{rel} missing YAML frontmatter")
             continue
@@ -778,12 +770,17 @@ def main() -> int:
                 )
 
     # --- Name cross-reference lint ---
-    lint_result = subprocess.run(
-        ["python3", str(ROOT / "scripts/lint_names.py"), "--root", str(ROOT)],
-        capture_output=True,
-        text=True,
-    )
-    if lint_result.returncode != 0:
+    try:
+        lint_result = subprocess.run(
+            ["python3", str(ROOT / "scripts/lint_names.py"), "--root", str(ROOT)],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except subprocess.TimeoutExpired:
+        failures.append("name-lint: timed out after 30 seconds")
+        lint_result = None
+    if lint_result is not None and lint_result.returncode != 0:
         stdout_lines = lint_result.stdout.strip().splitlines()
         if stdout_lines:
             for line in stdout_lines:

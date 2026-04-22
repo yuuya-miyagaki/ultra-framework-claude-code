@@ -49,8 +49,11 @@ if [ ! -f "$STATUS_FILE" ]; then
 fi
 
 # --- Read current value ---
+# Escape GATE_NAME for use in sed/grep patterns (defensive; current valid gates
+# are all [a-z_] but this guards against future additions).
+GATE_NAME_SED=$(printf '%s\n' "$GATE_NAME" | sed 's/[.[\/*^$&]/\\&/g')
 
-CURRENT=$(grep -A20 "^gate_approvals:" "$STATUS_FILE" | grep -m1 "  ${GATE_NAME}:" | sed "s/.*${GATE_NAME}:[[:space:]]*//" | sed 's/^"//;s/"$//' || true)
+CURRENT=$(grep -A20 "^gate_approvals:" "$STATUS_FILE" | grep -m1 "  ${GATE_NAME}:" | sed "s/.*${GATE_NAME_SED}:[[:space:]]*//" | sed 's/^"//;s/"$//' || true)
 
 if [ -z "$CURRENT" ]; then
   echo "ERROR: Gate '$GATE_NAME' not found in STATUS.md gate_approvals"
@@ -88,7 +91,9 @@ fi
 echo "[gate-approve] $GATE_NAME: $CURRENT → approved"
 
 TMP="${STATUS_FILE}.tmp.$$"
-sed "s/\(  ${GATE_NAME}:\).*/\1 approved/" "$STATUS_FILE" > "$TMP" && mv "$TMP" "$STATUS_FILE"
+# Scope sed to gate_approvals section only — prevents matching same key names
+# in other sections (e.g., current_refs also has review, qa, security, deploy).
+sed "/^gate_approvals:/,/^[a-z]/ s/\(  ${GATE_NAME_SED}:\).*/\1 approved/" "$STATUS_FILE" > "$TMP" && mv "$TMP" "$STATUS_FILE"
 
 # --- Update snapshot atomically ---
 

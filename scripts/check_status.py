@@ -29,6 +29,9 @@ REQUIRED_TOP_LEVEL_KEYS = [
 
 OPTIONAL_TOP_LEVEL_KEYS: set[str] = {"task_size", "task_size_rationale", "iteration", "ui_surface", "external_evidence", "failure_tracking", "client_context"}
 
+# Version where gate-ref empty warnings become hard errors.
+REF_CHECK_ERROR_VERSION = "0.13.0"
+
 REQUIRED_APPROVAL_KEYS = [
     "client_ready_for_dev",
     "brainstorm",
@@ -464,8 +467,8 @@ def validate_status_file(path: Path) -> list[str]:
                     f"{path} phase '{phase}' is not allowed for task_size '{task_size}'"
                 )
         elif mode == "Client":
-            failures.append(
-                f"{path} WARNING: task_size '{task_size}' is set in Client mode "
+            print(
+                f"WARNING: {path} task_size '{task_size}' is set in Client mode "
                 "(task_size only applies to Dev phases)"
             )
 
@@ -707,7 +710,7 @@ def validate_with_pyyaml(text: str, path: Path) -> list[str]:
         for key in REQUIRED_APPROVAL_KEYS:
             rv = regex_approvals.get(key)
             yv = yaml_approvals.get(key)
-            if rv != str(yv) if yv is not None else rv != yv:
+            if (rv != str(yv)) if yv is not None else (rv != yv):
                 failures.append(f"{path} gate {key} mismatch: regex={rv!r}, PyYAML={yv!r}")
 
     return failures
@@ -793,7 +796,7 @@ def pre_approve_gate(gate_name: str, root: Path) -> int:
                 )
                 return 1
 
-    # --- Gate-ref consistency (DEPRECATION WARNING — will become ERROR in v0.13.0) ---
+    # --- Gate-ref consistency (DEPRECATION WARNING — ERROR in v{REF_CHECK_ERROR_VERSION}) ---
     gate_ref_mapping = {
         "plan": "plan",
         "review": "review",
@@ -810,7 +813,7 @@ def pre_approve_gate(gate_name: str, root: Path) -> int:
                 f"DEPRECATION WARNING: Approving '{gate_name}' but "
                 f"current_refs.{ref_key} is empty."
             )
-            print("         This will become a hard ERROR in v0.13.0.")
+            print(f"         This will become a hard ERROR in v{REF_CHECK_ERROR_VERSION}.")
             print(
                 f"         Set current_refs.{ref_key} to the evidence file "
                 f"path before approving."

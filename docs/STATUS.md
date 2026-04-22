@@ -5,7 +5,6 @@ project_name: "Ultra Framework Claude Code"
 mode: Dev
 phase: review
 task_type: framework
-task_size: L
 task_size: M
 task_size_rationale: "MCP deploy gate hook + ref check 強化 + name lint + health check。新規2ファイル + 既存多数修正。"
 iteration: 6
