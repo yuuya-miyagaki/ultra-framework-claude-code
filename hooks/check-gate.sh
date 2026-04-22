@@ -31,8 +31,21 @@ fi
 
 # --- Allowlist: project work files (always allowed) ---
 case "$TARGET_FILE" in
-  */docs/*|docs/*|*/templates/*|templates/*|*.gitkeep)
+  */docs/*|docs/*|*.gitkeep)
     echo '{}'
+    exit 0
+    ;;
+esac
+
+# --- Templates: framework-controlled files ---
+case "$TARGET_FILE" in
+  */templates/*|templates/*)
+    TASK_TYPE=$(grep -m1 "^task_type:" "$STATUS_FILE" | sed "s/^task_type:[[:space:]]*//" | sed 's/^"//;s/"$//' || true)
+    if [ "$TASK_TYPE" = "framework" ]; then
+      echo '{}'
+      exit 0
+    fi
+    printf '{"permissionDecision":"deny","message":"[integrity] Template edit blocked during project work (task_type=%s). Templates are framework-controlled files."}\n' "$TASK_TYPE"
     exit 0
     ;;
 esac

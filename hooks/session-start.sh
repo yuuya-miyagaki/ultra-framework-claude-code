@@ -19,6 +19,8 @@ mkdir -p "$SNAPSHOT_DIR"
 sed -n '/^gate_approvals:/,/^[a-z]/{ /^gate_approvals:/p; /^  /p; }' "$STATUS_FILE" > "$SNAPSHOT_FILE" 2>/dev/null || true
 # Save phase to snapshot (used by post-status-audit.sh for phase transition monitoring).
 grep -m1 "^phase:" "$STATUS_FILE" >> "$SNAPSHOT_FILE" 2>/dev/null || true
+# Save mode to snapshot (used by post-status-audit.sh for mode change monitoring).
+grep -m1 "^mode:" "$STATUS_FILE" >> "$SNAPSHOT_FILE" 2>/dev/null || true
 
 # Extract a scalar value from YAML frontmatter.
 extract_value() {

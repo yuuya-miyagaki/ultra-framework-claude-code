@@ -103,10 +103,35 @@ def run_tier(tier_num: int, script_name: str, label: str) -> int:
         return 1
 
 
+def run_tier0(root: Path) -> int:
+    """Tier 0: unittest discovery. Runs all tests in tests/ directory."""
+    print("=== Tier 0: Unit Tests ===\n")
+    try:
+        proc = subprocess.run(
+            ["python3", "-m", "unittest", "discover", "-s", str(root / "tests"), "-v"],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            cwd=str(root),
+        )
+        print(proc.stderr, end="")  # unittest writes to stderr
+        if proc.stdout:
+            print(proc.stdout, end="")
+        print("")
+        if proc.returncode != 0:
+            print("Result: FAIL")
+        else:
+            print("Result: PASS")
+        return proc.returncode
+    except subprocess.TimeoutExpired:
+        print("Result: FAIL (timeout)\n")
+        return 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run tiered evaluation")
     parser.add_argument("--root", default=None, help="Project root (default: script parent dir)")
-    parser.add_argument("--tier", type=int, default=1, choices=[1, 2, 3], help="Evaluation tier")
+    parser.add_argument("--tier", type=int, default=1, choices=[0, 1, 2, 3], help="Evaluation tier")
     args = parser.parse_args()
 
     if args.root:
@@ -114,7 +139,9 @@ def main() -> int:
     else:
         root = Path(__file__).resolve().parent.parent
 
-    if args.tier == 1:
+    if args.tier == 0:
+        return run_tier0(root)
+    elif args.tier == 1:
         return run_tier1(root)
     elif args.tier == 2:
         return run_tier(2, "eval_scaffold_smoke.py", "Tier 2: Scaffold Smoke Tests")

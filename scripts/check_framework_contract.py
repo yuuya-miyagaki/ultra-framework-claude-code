@@ -227,6 +227,7 @@ PLACEHOLDER_PATTERN = re.compile(r"<[A-Za-z\u3000-\u9FFF/ \-\.,:\d_]{1,40}>")
 PLACEHOLDER_ALLOWLIST = {
     "<topic>",
     "<パス>",
+    "<gate>",
     "<gate-name>",
     # Python source code tokens (docstrings/comments in check_status.py etc.)
     "<body>",

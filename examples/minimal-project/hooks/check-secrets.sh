@@ -37,16 +37,21 @@ fi
 
 # Broad staging that would include .env: git add -A, git add .
 if printf '%s' "$CMD" | grep -qE 'git\s+add\s+(-A|--all|\.)' 2>/dev/null; then
-  # Check if actual secret .env files exist (excluding safe variants)
+  # Check if actual secret .env files exist anywhere in the repo (excluding safe variants).
+  # Recursive search handles monorepo layouts (e.g., services/api/.env).
   ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
   HAS_SECRET_ENV=false
-  for f in "${ROOT}"/.env*; do
-    [ -e "$f" ] || continue
+  while IFS= read -r f; do
     case "$(basename "$f")" in
       .env.example|.env.template|.env.sample) ;;
       *) HAS_SECRET_ENV=true; break ;;
     esac
-  done
+  done < <(find "$ROOT" -name '.env*' \
+    -not -path '*/node_modules/*' \
+    -not -path '*/.git/*' \
+    -not -path '*/vendor/*' \
+    -not -path '*/.venv/*' \
+    2>/dev/null || true)
   if [ "$HAS_SECRET_ENV" = true ]; then
     printf '{"permissionDecision":"deny","message":"[secrets] git add -A / git add . は .env を含む可能性があります。個別のファイル名を指定して git add してください。"}\n'
     exit 0

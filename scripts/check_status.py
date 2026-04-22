@@ -550,6 +550,7 @@ def validate_status_file(path: Path) -> list[str]:
         "qa": "qa",
         "security": "security",
         "deploy": "deploy",
+        "client_ready_for_dev": "translation",
     }
     for gate_key, ref_key in gate_ref_mapping.items():
         gate_value = approvals.get(gate_key)
@@ -570,7 +571,7 @@ def validate_status_file(path: Path) -> list[str]:
             )
 
     root = path.parent.parent
-    for key in ["plan", "spec", "review", "qa", "security", "deploy"]:
+    for key in ["plan", "spec", "review", "qa", "security", "deploy", "translation"]:
         value = refs.get(key)
         if isinstance(value, str) and value != "null":
             ref_path = root / value
@@ -741,8 +742,47 @@ def pre_approve_gate(gate_name: str, root: Path) -> int:
     approvals = extract_approval_map(frontmatter)
     refs = extract_current_refs(frontmatter)
 
+    # --- Gate-ref consistency (DEPRECATION WARNING — ERROR in v{REF_CHECK_ERROR_VERSION}) ---
+    # Run before mode-transition gate handlers so warnings fire for all gates.
+    gate_ref_mapping = {
+        "plan": "plan",
+        "review": "review",
+        "qa": "qa",
+        "security": "security",
+        "deploy": "deploy",
+        "client_ready_for_dev": "translation",
+    }
+    if gate_name in gate_ref_mapping:
+        ref_key = gate_ref_mapping[gate_name]
+        ref_value = refs.get(ref_key)
+        ref_is_empty = ref_value is None or ref_value == "null" or ref_value == []
+        if ref_is_empty:
+            print(
+                f"DEPRECATION WARNING: Approving '{gate_name}' but "
+                f"current_refs.{ref_key} is empty."
+            )
+            print(f"         This will become a hard ERROR in v{REF_CHECK_ERROR_VERSION}.")
+            print(
+                f"         Set current_refs.{ref_key} to the evidence file "
+                f"path before approving."
+            )
+
     # Mode-transition gates.
     if gate_name == "dev_ready_for_client":
+        # Require review gate to be approved before handing back to Client.
+        required = ["review"]
+        # For strict task types (feature/refactor/framework) with size > S,
+        # also require qa and security.
+        if task_type in STRICT_GATE_TASK_TYPES and task_size != "S":
+            required.extend(["qa", "security"])
+        for req in required:
+            val = approvals.get(req, "pending")
+            if val not in ("approved", "n/a"):
+                print(
+                    f"ERROR: Cannot approve 'dev_ready_for_client' — "
+                    f"gate '{req}' is '{val}' (must be approved or n/a)."
+                )
+                return 1
         return 0
 
     if gate_name == "client_ready_for_dev":
@@ -796,28 +836,36 @@ def pre_approve_gate(gate_name: str, root: Path) -> int:
                 )
                 return 1
 
-    # --- Gate-ref consistency (DEPRECATION WARNING — ERROR in v{REF_CHECK_ERROR_VERSION}) ---
-    gate_ref_mapping = {
-        "plan": "plan",
-        "review": "review",
-        "qa": "qa",
-        "security": "security",
-        "deploy": "deploy",
-    }
-    if gate_name in gate_ref_mapping:
-        ref_key = gate_ref_mapping[gate_name]
-        ref_value = refs.get(ref_key)
-        ref_is_empty = ref_value is None or ref_value == "null" or ref_value == []
-        if ref_is_empty:
-            print(
-                f"DEPRECATION WARNING: Approving '{gate_name}' but "
-                f"current_refs.{ref_key} is empty."
-            )
-            print(f"         This will become a hard ERROR in v{REF_CHECK_ERROR_VERSION}.")
-            print(
-                f"         Set current_refs.{ref_key} to the evidence file "
-                f"path before approving."
-            )
+    # Gate-ref consistency already checked above (before mode-transition gates).
+    return 0
+
+
+def pre_na_gate(gate_name: str, root: Path) -> int:
+    """Check if a gate can be set to n/a.
+
+    Only brainstorm and plan gates support n/a, and only for bugfix/hotfix flows.
+    feature/refactor/framework require brainstorm and plan to be actively approved.
+    Returns 0 if allowed, 1 otherwise.
+    Called by update-gate.sh via --pre-na-gate.
+    """
+    na_allowed_gates = {"brainstorm", "plan"}
+    if gate_name not in na_allowed_gates:
+        print(f"ERROR: Gate '{gate_name}' cannot be set to n/a.")
+        print(f"       Only {sorted(na_allowed_gates)} support n/a.")
+        return 1
+
+    # Read task_type from STATUS.md — only bugfix/hotfix may skip brainstorm/plan.
+    status_path = root / "docs" / "STATUS.md"
+    if status_path.exists():
+        content = status_path.read_text(encoding="utf-8")
+        frontmatter = extract_frontmatter(content)
+        if frontmatter:
+            task_type = extract_scalar_value(frontmatter, "task_type") or ""
+            na_allowed_task_types = {"bugfix", "hotfix"}
+            if task_type and task_type not in na_allowed_task_types:
+                print(f"ERROR: Cannot set '{gate_name}' to n/a for task_type '{task_type}'.")
+                print(f"       Only {sorted(na_allowed_task_types)} task types may skip brainstorm/plan.")
+                return 1
 
     return 0
 
@@ -895,13 +943,58 @@ def check_phase_transition(old_phase: str, new_phase: str, root: Path) -> int:
     Called by post-status-audit.sh via --check-phase-transition.
 
     Rules:
-    1. Non-Dev phases: always allowed.
-    2. Backward/same transitions: always allowed (rework).
-    3. Forward transitions: must go to the NEXT allowed phase
+    1. Cross-mode transitions require boundary gates.
+    2. Non-Dev intra-mode phases: always allowed.
+    3. Backward/same transitions: always allowed (rework).
+    4. Forward transitions: must go to the NEXT allowed phase
        (per SIZE_ALLOWED_PHASES). Phase skipping is denied.
-    4. Prerequisite gates for the target phase must be met.
+    5. Prerequisite gates for the target phase must be met.
     """
-    # Only validate Dev phase transitions.
+    CLIENT_PHASES = MODE_PHASES["Client"]
+    DEV_PHASES = MODE_PHASES["Dev"]
+
+    # Cross-mode boundary checks.
+    if old_phase in CLIENT_PHASES and new_phase in DEV_PHASES:
+        # Client→Dev: client_ready_for_dev required.
+        status_path = root / "docs" / "STATUS.md"
+        if status_path.exists():
+            text = read_text(status_path)
+            fm = extract_frontmatter(text)
+            if fm:
+                approvals = extract_approval_map(fm)
+                gate_val = approvals.get("client_ready_for_dev", "pending")
+                if gate_val != "approved":
+                    print(
+                        f"ERROR: {old_phase}→{new_phase} crosses Client→Dev boundary."
+                    )
+                    print(
+                        f"       Gate 'client_ready_for_dev' is '{gate_val}' "
+                        f"(must be approved)."
+                    )
+                    return 1
+        return 0
+
+    if old_phase in DEV_PHASES and new_phase in CLIENT_PHASES:
+        # Dev→Client: dev_ready_for_client required.
+        status_path = root / "docs" / "STATUS.md"
+        if status_path.exists():
+            text = read_text(status_path)
+            fm = extract_frontmatter(text)
+            if fm:
+                approvals = extract_approval_map(fm)
+                gate_val = approvals.get("dev_ready_for_client", "pending")
+                if gate_val != "approved":
+                    print(
+                        f"ERROR: {old_phase}→{new_phase} crosses Dev→Client boundary."
+                    )
+                    print(
+                        f"       Gate 'dev_ready_for_client' is '{gate_val}' "
+                        f"(must be approved)."
+                    )
+                    return 1
+        return 0
+
+    # Only validate Dev phase transitions (intra-mode).
     if old_phase not in DEV_PHASE_ORDER or new_phase not in DEV_PHASE_ORDER:
         return 0
 
@@ -1054,6 +1147,8 @@ def main() -> int:
                         help="Enable PyYAML cross-validation (requires PyYAML)")
     parser.add_argument("--pre-approve-gate", dest="pre_approve_gate", default=None,
                         help="Check if a gate can be approved (used by update-gate.sh)")
+    parser.add_argument("--pre-na-gate", dest="pre_na_gate", default=None,
+                        help="Check if a gate can be set to n/a (used by update-gate.sh)")
     parser.add_argument("--check-deploy-ready", dest="check_deploy_ready",
                         action="store_true",
                         help="Check if deploy commands are allowed (used by check-deploy-gate.sh)")
@@ -1069,6 +1164,9 @@ def main() -> int:
 
     if args.pre_approve_gate:
         return pre_approve_gate(args.pre_approve_gate, root)
+
+    if args.pre_na_gate:
+        return pre_na_gate(args.pre_na_gate, root)
 
     if args.check_deploy_ready:
         return check_deploy_ready(root)

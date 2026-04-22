@@ -32,6 +32,7 @@ DEFAULT_APPROVALS = {
 
 def make_status_md(
     *,
+    mode: str = "Dev",
     phase: str = "implement",
     task_type: str = "feature",
     task_size: str = "L",
@@ -63,7 +64,7 @@ def make_status_md(
         f"framework: ultra-framework-claude-code\n"
         f'framework_version: "0.12.0"\n'
         f"project_name: test\n"
-        f"mode: Dev\n"
+        f"mode: {mode}\n"
         f"phase: {phase}\n"
         f"task_type: {task_type}\n"
         f"task_size: {task_size}\n"
@@ -800,6 +801,815 @@ class TestProfileHooksInclude(unittest.TestCase):
         for script in deploy_scripts:
             self.assertIn(script, hooks,
                           f"Deploy hook {script} missing from full profile hooks_include")
+
+
+# =============================================================================
+# P2d: update-gate.sh action tests (approve / na / reset)
+# =============================================================================
+
+
+class TestUpdateGateActions(unittest.TestCase):
+    """Test update-gate.sh approve/na/reset actions."""
+
+    UPDATE_GATE = ROOT / "scripts" / "update-gate.sh"
+
+    def _run_gate(self, root: str, gate: str, action: str = "approve") -> tuple[int, str]:
+        """Run update-gate.sh from the temp project's scripts/ dir."""
+        local_script = Path(root) / "scripts" / "update-gate.sh"
+        result = subprocess.run(
+            ["bash", str(local_script), gate, action],
+            capture_output=True, text=True,
+            cwd=root,
+            env={**os.environ, "PATH": os.environ.get("PATH", "")},
+        )
+        return result.returncode, (result.stdout + result.stderr).strip()
+
+    def _setup_project(self, root: str, content: str) -> None:
+        """Write STATUS.md and set up scripts dir in temp root.
+
+        Copies update-gate.sh (so ROOT resolves to temp dir via dirname)
+        and symlinks check_status.py (so pre-approve/pre-na checks work).
+        """
+        import shutil
+        docs = Path(root) / "docs"
+        docs.mkdir(exist_ok=True)
+        (docs / "STATUS.md").write_text(content, encoding="utf-8")
+        # Copy update-gate.sh so ROOT resolves to temp dir.
+        scripts_dir = Path(root) / "scripts"
+        scripts_dir.mkdir(exist_ok=True)
+        shutil.copy2(self.UPDATE_GATE, scripts_dir / "update-gate.sh")
+        # Symlink check_status.py so it's available in the same dir.
+        (scripts_dir / "check_status.py").symlink_to(
+            ROOT / "scripts" / "check_status.py"
+        )
+
+    def test_default_action_is_approve(self):
+        """No action arg → defaults to approve (backward compat)."""
+        content = make_status_md(
+            phase="brainstorm",
+            approvals={"brainstorm": "pending", "client_ready_for_dev": "approved"},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            self._setup_project(tmp, content)
+            rc, out = self._run_gate(tmp, "brainstorm")
+            self.assertEqual(rc, 0, f"Default approve should succeed: {out}")
+            status = (Path(tmp) / "docs" / "STATUS.md").read_text()
+            self.assertIn("brainstorm: approved", status,
+                          f"Gate should be approved in STATUS.md")
+
+    def test_na_action_sets_gate_to_na(self):
+        """na action on pending brainstorm gate → set to n/a (bugfix flow)."""
+        content = make_status_md(
+            phase="brainstorm",
+            task_type="bugfix",
+            approvals={"brainstorm": "pending", "client_ready_for_dev": "approved"},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            self._setup_project(tmp, content)
+            rc, out = self._run_gate(tmp, "brainstorm", "na")
+            self.assertEqual(rc, 0, f"na action should succeed: {out}")
+            status = (Path(tmp) / "docs" / "STATUS.md").read_text()
+            self.assertIn("brainstorm: n/a", status,
+                          f"Gate should be n/a in STATUS.md")
+
+    def test_na_action_blocks_for_already_approved(self):
+        """na action on approved gate → error (cannot downgrade)."""
+        content = make_status_md(
+            phase="brainstorm",
+            approvals={"brainstorm": "approved", "client_ready_for_dev": "approved"},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            self._setup_project(tmp, content)
+            rc, out = self._run_gate(tmp, "brainstorm", "na")
+            self.assertNotEqual(rc, 0, f"na on approved should fail: {out}")
+            self.assertIn("approved", out, f"Error should mention current value: {out}")
+
+    def test_reset_action_sets_gate_to_pending(self):
+        """reset action on n/a gate → set back to pending."""
+        content = make_status_md(
+            phase="brainstorm",
+            approvals={"brainstorm": "n/a", "client_ready_for_dev": "approved"},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            self._setup_project(tmp, content)
+            rc, out = self._run_gate(tmp, "brainstorm", "reset")
+            self.assertEqual(rc, 0, f"reset action should succeed: {out}")
+            status = (Path(tmp) / "docs" / "STATUS.md").read_text()
+            self.assertIn("brainstorm: pending", status,
+                          f"Gate should be reset to pending in STATUS.md")
+
+    def test_reset_action_blocks_for_pending(self):
+        """reset action on already-pending gate → error (no-op)."""
+        content = make_status_md(
+            phase="brainstorm",
+            approvals={"brainstorm": "pending", "client_ready_for_dev": "approved"},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            self._setup_project(tmp, content)
+            rc, out = self._run_gate(tmp, "brainstorm", "reset")
+            self.assertNotEqual(rc, 0, f"reset on pending should fail: {out}")
+
+    def test_na_blocked_for_non_brainstorm_plan(self):
+        """na action on review gate → error (only brainstorm/plan allow n/a)."""
+        content = make_status_md(
+            phase="review",
+            approvals={
+                "brainstorm": "approved", "plan": "approved",
+                "review": "pending", "client_ready_for_dev": "approved",
+            },
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            self._setup_project(tmp, content)
+            rc, out = self._run_gate(tmp, "review", "na")
+            self.assertNotEqual(rc, 0, f"na on review should fail: {out}")
+            self.assertIn("n/a", out, f"Error should explain n/a restriction: {out}")
+
+    def test_reset_clears_corresponding_ref(self):
+        """reset on plan gate must also null current_refs.plan."""
+        content = make_status_md(
+            phase="implement",
+            approvals={
+                "brainstorm": "approved", "plan": "approved",
+                "client_ready_for_dev": "approved",
+            },
+            refs={"plan": "docs/plans/my-plan.md"},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            self._setup_project(tmp, content)
+            # Create the ref file so the validator doesn't complain
+            plan_dir = Path(tmp) / "docs" / "plans"
+            plan_dir.mkdir(parents=True, exist_ok=True)
+            (plan_dir / "my-plan.md").write_text("plan", encoding="utf-8")
+            rc, out = self._run_gate(tmp, "plan", "reset")
+            self.assertEqual(rc, 0, f"reset should succeed: {out}")
+            status = (Path(tmp) / "docs" / "STATUS.md").read_text()
+            self.assertIn("plan: pending", status,
+                          "Gate should be reset to pending")
+            # current_refs.plan should be nulled
+            import re
+            ref_match = re.search(
+                r"current_refs:.*?(?=\n[a-z]|\Z)",
+                status, re.DOTALL,
+            )
+            self.assertIsNotNone(ref_match, "current_refs section should exist")
+            ref_section = ref_match.group()
+            # The plan ref within current_refs must be null
+            plan_ref = re.search(r"plan:\s*(\S+)", ref_section)
+            self.assertIsNotNone(plan_ref, "plan ref should exist in current_refs")
+            self.assertEqual(plan_ref.group(1), "null",
+                             f"current_refs.plan should be null after reset, got: {plan_ref.group(1)}")
+
+    def test_reset_clears_translation_for_client_ready_for_dev(self):
+        """reset on client_ready_for_dev must null current_refs.translation."""
+        content = make_status_md(
+            phase="implement",
+            approvals={
+                "client_ready_for_dev": "approved",
+                "brainstorm": "approved", "plan": "approved",
+            },
+            refs={"translation": "docs/translation/mapping.md"},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            self._setup_project(tmp, content)
+            trans_dir = Path(tmp) / "docs" / "translation"
+            trans_dir.mkdir(parents=True, exist_ok=True)
+            (trans_dir / "mapping.md").write_text("mapping", encoding="utf-8")
+            rc, out = self._run_gate(tmp, "client_ready_for_dev", "reset")
+            self.assertEqual(rc, 0, f"reset should succeed: {out}")
+            status = (Path(tmp) / "docs" / "STATUS.md").read_text()
+            self.assertIn("client_ready_for_dev: pending", status)
+            import re
+            ref_match = re.search(
+                r"current_refs:.*?(?=\n[a-z]|\Z)",
+                status, re.DOTALL,
+            )
+            ref_section = ref_match.group()
+            trans_ref = re.search(r"translation:\s*(\S+)", ref_section)
+            self.assertIsNotNone(trans_ref)
+            self.assertEqual(trans_ref.group(1), "null",
+                             f"current_refs.translation should be null after reset, got: {trans_ref.group(1)}")
+
+    def test_reset_no_ref_gate_only_changes_gate(self):
+        """reset on brainstorm (no ref mapping) only changes gate value."""
+        content = make_status_md(
+            phase="brainstorm",
+            approvals={
+                "brainstorm": "n/a",
+                "client_ready_for_dev": "approved",
+            },
+            refs={"plan": "docs/plans/keep-this.md"},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            self._setup_project(tmp, content)
+            plan_dir = Path(tmp) / "docs" / "plans"
+            plan_dir.mkdir(parents=True, exist_ok=True)
+            (plan_dir / "keep-this.md").write_text("plan", encoding="utf-8")
+            rc, out = self._run_gate(tmp, "brainstorm", "reset")
+            self.assertEqual(rc, 0, f"reset should succeed: {out}")
+            status = (Path(tmp) / "docs" / "STATUS.md").read_text()
+            self.assertIn("brainstorm: pending", status)
+            # plan ref should be untouched
+            import re
+            ref_match = re.search(
+                r"current_refs:.*?(?=\n[a-z]|\Z)",
+                status, re.DOTALL,
+            )
+            ref_section = ref_match.group()
+            plan_ref = re.search(r"plan:\s*(\S+)", ref_section)
+            self.assertIsNotNone(plan_ref)
+            self.assertEqual(plan_ref.group(1), "docs/plans/keep-this.md",
+                             f"Plan ref should be untouched: {plan_ref.group(1)}")
+
+    def test_na_blocked_for_feature_task_type(self):
+        """na on brainstorm for feature task → error (feature requires brainstorm)."""
+        content = make_status_md(
+            phase="brainstorm",
+            task_type="feature",
+            approvals={"brainstorm": "pending", "client_ready_for_dev": "approved"},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            self._setup_project(tmp, content)
+            rc, out = self._run_gate(tmp, "brainstorm", "na")
+            self.assertNotEqual(rc, 0, f"na on feature brainstorm should fail: {out}")
+            self.assertIn("feature", out.lower(),
+                          f"Error should mention task_type: {out}")
+
+    def test_na_allowed_for_bugfix_task_type(self):
+        """na on brainstorm for bugfix task → allowed."""
+        content = make_status_md(
+            phase="brainstorm",
+            task_type="bugfix",
+            approvals={"brainstorm": "pending", "client_ready_for_dev": "approved"},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            self._setup_project(tmp, content)
+            rc, out = self._run_gate(tmp, "brainstorm", "na")
+            self.assertEqual(rc, 0, f"na on bugfix brainstorm should succeed: {out}")
+            status = (Path(tmp) / "docs" / "STATUS.md").read_text()
+            self.assertIn("brainstorm: n/a", status)
+
+    def test_na_allowed_for_hotfix_task_type(self):
+        """na on plan for hotfix task → allowed."""
+        content = make_status_md(
+            phase="brainstorm",
+            task_type="hotfix",
+            approvals={"brainstorm": "n/a", "plan": "pending",
+                        "client_ready_for_dev": "approved"},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            self._setup_project(tmp, content)
+            rc, out = self._run_gate(tmp, "plan", "na")
+            self.assertEqual(rc, 0, f"na on hotfix plan should succeed: {out}")
+            status = (Path(tmp) / "docs" / "STATUS.md").read_text()
+            self.assertIn("plan: n/a", status)
+
+
+# =============================================================================
+# P2d: post-status-audit.sh all gate change detection
+# =============================================================================
+
+
+class TestPostStatusAuditAllGateChanges(unittest.TestCase):
+    """Verify post-status-audit.sh detects ALL gate value changes, not just →approved."""
+
+    HOOK_NAME = "post-status-audit.sh"
+
+    def _make_snapshot(self, root: str, phase: str, gates: dict[str, str],
+                       mode: str = "Dev") -> None:
+        """Create .claude/.gate-snapshot with phase, mode, and gate data."""
+        snapshot_dir = Path(root) / ".claude"
+        snapshot_dir.mkdir(exist_ok=True)
+        gate_lines = "\n".join(f"  {k}: {v}" for k, v in gates.items())
+        snapshot = f"gate_approvals:\n{gate_lines}\nphase: {phase}\nmode: {mode}\n"
+        (snapshot_dir / ".gate-snapshot").write_text(snapshot, encoding="utf-8")
+
+    def test_pending_to_na_via_direct_edit_denied(self):
+        """Direct edit pending→n/a must be denied (bypass attempt)."""
+        status_approvals = {
+            "client_ready_for_dev": "approved",
+            "brainstorm": "n/a",  # changed from pending
+            "plan": "approved",
+            "review": "pending", "qa": "pending",
+            "security": "pending", "deploy": "pending",
+            "dev_ready_for_client": "pending",
+        }
+        content = make_status_md(phase="implement", approvals=status_approvals)
+        with TempProjectWithHooks(content) as root:
+            self._make_snapshot(root, "implement", {
+                "client_ready_for_dev": "approved",
+                "brainstorm": "pending",  # was pending
+                "plan": "approved",
+                "review": "pending", "qa": "pending",
+                "security": "pending", "deploy": "pending",
+                "dev_ready_for_client": "pending",
+            })
+            stdin = '{"tool_name":"Edit","tool_input":{"file_path":"docs/STATUS.md"}}'
+            rc, out = run_hook(self.HOOK_NAME, root, stdin)
+            self.assertEqual(rc, 0)
+            self.assertIn('"permissionDecision":"deny"', out,
+                          f"pending→n/a direct edit should be denied: {out}")
+            self.assertIn("gate-tamper", out,
+                          f"Deny message should include gate-tamper tag: {out}")
+
+    def test_approved_to_pending_via_direct_edit_denied(self):
+        """Direct edit approved→pending must be denied (reset bypass)."""
+        status_approvals = {
+            "client_ready_for_dev": "approved",
+            "brainstorm": "approved",
+            "plan": "pending",  # changed from approved
+            "review": "pending", "qa": "pending",
+            "security": "pending", "deploy": "pending",
+            "dev_ready_for_client": "pending",
+        }
+        content = make_status_md(phase="implement", approvals=status_approvals)
+        with TempProjectWithHooks(content) as root:
+            self._make_snapshot(root, "implement", {
+                "client_ready_for_dev": "approved",
+                "brainstorm": "approved",
+                "plan": "approved",  # was approved
+                "review": "pending", "qa": "pending",
+                "security": "pending", "deploy": "pending",
+                "dev_ready_for_client": "pending",
+            })
+            stdin = '{"tool_name":"Edit","tool_input":{"file_path":"docs/STATUS.md"}}'
+            rc, out = run_hook(self.HOOK_NAME, root, stdin)
+            self.assertEqual(rc, 0)
+            self.assertIn('"permissionDecision":"deny"', out,
+                          f"approved→pending direct edit should be denied: {out}")
+
+    def test_no_change_passes(self):
+        """Same gates in snapshot and STATUS.md → allow."""
+        gates = {
+            "client_ready_for_dev": "approved",
+            "brainstorm": "approved",
+            "plan": "approved",
+            "review": "pending", "qa": "pending",
+            "security": "pending", "deploy": "pending",
+            "dev_ready_for_client": "pending",
+        }
+        content = make_status_md(phase="implement", approvals=gates)
+        with TempProjectWithHooks(content) as root:
+            self._make_snapshot(root, "implement", gates)
+            stdin = '{"tool_name":"Edit","tool_input":{"file_path":"docs/STATUS.md"}}'
+            rc, out = run_hook(self.HOOK_NAME, root, stdin)
+            self.assertEqual(rc, 0)
+            self.assertEqual(out, "{}", f"No change should pass: {out}")
+
+
+# =============================================================================
+# P1: Client/Dev boundary gate enforcement
+# =============================================================================
+
+
+class TestModeTransitionEnforcement(unittest.TestCase):
+    """Verify Client↔Dev boundary checks in check_phase_transition."""
+
+    def test_handover_to_brainstorm_requires_client_ready_for_dev(self):
+        """handover→brainstorm without client_ready_for_dev → deny."""
+        content = make_status_md(
+            mode="Dev", phase="brainstorm",
+            approvals={"client_ready_for_dev": "pending"},
+        )
+        with TempProject(content) as root:
+            rc, out = run_check(
+                root, "--check-phase-transition", "handover", "brainstorm",
+            )
+            self.assertNotEqual(rc, 0, f"Should deny without client_ready_for_dev: {out}")
+            self.assertIn("client_ready_for_dev", out,
+                          f"Error should mention missing gate: {out}")
+
+    def test_handover_to_brainstorm_with_gate_approved_allows(self):
+        """handover→brainstorm with client_ready_for_dev approved → allow."""
+        content = make_status_md(
+            mode="Dev", phase="brainstorm",
+            approvals={"client_ready_for_dev": "approved"},
+        )
+        with TempProject(content) as root:
+            rc, out = run_check(
+                root, "--check-phase-transition", "handover", "brainstorm",
+            )
+            self.assertEqual(rc, 0, f"Should allow with client_ready_for_dev: {out}")
+
+    def test_dev_ready_for_client_validates_review_gate(self):
+        """dev_ready_for_client pre-approve requires review gate approved."""
+        content = make_status_md(
+            phase="ship", task_type="feature", task_size="L",
+            approvals={
+                "brainstorm": "approved", "plan": "approved",
+                "review": "pending",  # NOT approved
+                "qa": "approved", "security": "approved",
+            },
+        )
+        with TempProject(content) as root:
+            rc, out = run_check(root, "--pre-approve-gate", "dev_ready_for_client")
+            self.assertNotEqual(rc, 0, f"Should deny without review: {out}")
+            self.assertIn("review", out, f"Error should mention review: {out}")
+
+    def test_dev_ready_for_client_all_approved_allows(self):
+        """dev_ready_for_client with review approved → allow."""
+        content = make_status_md(
+            phase="ship", task_type="feature", task_size="L",
+            approvals={
+                "brainstorm": "approved", "plan": "approved",
+                "review": "approved", "qa": "approved", "security": "approved",
+            },
+        )
+        with TempProject(content) as root:
+            rc, out = run_check(root, "--pre-approve-gate", "dev_ready_for_client")
+            self.assertEqual(rc, 0, f"Should allow with review approved: {out}")
+
+
+class TestModeChangeAudit(unittest.TestCase):
+    """Verify post-status-audit.sh detects unauthorized mode changes."""
+
+    HOOK_NAME = "post-status-audit.sh"
+
+    def _make_snapshot(self, root: str, phase: str, gates: dict[str, str],
+                       mode: str = "Dev") -> None:
+        """Create .claude/.gate-snapshot with phase, mode, and gate data."""
+        snapshot_dir = Path(root) / ".claude"
+        snapshot_dir.mkdir(exist_ok=True)
+        gate_lines = "\n".join(f"  {k}: {v}" for k, v in gates.items())
+        snapshot = f"gate_approvals:\n{gate_lines}\nphase: {phase}\nmode: {mode}\n"
+        (snapshot_dir / ".gate-snapshot").write_text(snapshot, encoding="utf-8")
+
+    def test_mode_change_without_gate_denied(self):
+        """Direct mode change Client→Dev (same phase) without gate → deny.
+
+        This tests the defense-in-depth mode-tamper check: mode changes
+        but phase stays the same, bypassing the phase transition check.
+        """
+        gates = {
+            "client_ready_for_dev": "pending",
+            "brainstorm": "pending", "plan": "pending",
+            "review": "pending", "qa": "pending",
+            "security": "pending", "deploy": "pending",
+            "dev_ready_for_client": "pending",
+        }
+        # Mode changed Client→Dev but phase stays at handover.
+        content = make_status_md(mode="Dev", phase="handover", approvals=gates)
+        with TempProjectWithHooks(content) as root:
+            self._make_snapshot(root, "handover", gates, mode="Client")
+            stdin = '{"tool_name":"Edit","tool_input":{"file_path":"docs/STATUS.md"}}'
+            rc, out = run_hook(self.HOOK_NAME, root, stdin)
+            self.assertEqual(rc, 0)
+            self.assertIn('"permissionDecision":"deny"', out,
+                          f"Mode change without gate should be denied: {out}")
+            self.assertIn("mode-tamper", out,
+                          f"Deny message should include mode-tamper tag: {out}")
+
+    def test_mode_change_with_gate_approved_passes(self):
+        """Mode change Client→Dev (same phase) with gate approved → allow."""
+        gates = {
+            "client_ready_for_dev": "approved",
+            "brainstorm": "pending", "plan": "pending",
+            "review": "pending", "qa": "pending",
+            "security": "pending", "deploy": "pending",
+            "dev_ready_for_client": "pending",
+        }
+        content = make_status_md(mode="Dev", phase="handover", approvals=gates)
+        with TempProjectWithHooks(content) as root:
+            self._make_snapshot(root, "handover", gates, mode="Client")
+            stdin = '{"tool_name":"Edit","tool_input":{"file_path":"docs/STATUS.md"}}'
+            rc, out = run_hook(self.HOOK_NAME, root, stdin)
+            self.assertEqual(rc, 0)
+            self.assertEqual(out, "{}", f"Mode change with gate should pass: {out}")
+
+
+# =============================================================================
+# P2a: translation ref contract
+# =============================================================================
+
+
+class TestTranslationRefContract(unittest.TestCase):
+    """Verify translation ref is checked in file existence validation and gate-ref mapping."""
+
+    def test_translation_ref_missing_file_fails(self):
+        """translation ref pointing to non-existent file → FAIL."""
+        content = make_status_md(
+            phase="implement",
+            refs={"translation": "docs/translation/mapping.md"},
+        )
+        with TempProject(content) as root:
+            rc, out = run_check(root)
+            self.assertNotEqual(rc, 0, f"Should fail on missing translation file: {out}")
+            self.assertIn("translation", out,
+                          f"Failure should mention translation ref: {out}")
+
+    def test_translation_ref_exists_passes(self):
+        """translation ref with existing file → no failure from ref check."""
+        content = make_status_md(
+            phase="implement",
+            refs={"translation": "docs/translation/mapping.md"},
+        )
+        with TempProject(content) as root:
+            # Create the referenced file.
+            trans_dir = Path(root) / "docs" / "translation"
+            trans_dir.mkdir(parents=True)
+            (trans_dir / "mapping.md").write_text("# Mapping\n")
+            rc, out = run_check(root)
+            # Should not fail on translation ref (may fail on other things).
+            self.assertNotIn("translation", out,
+                             f"Should not complain about existing translation file: {out}")
+
+    def test_client_ready_for_dev_warns_on_empty_translation(self):
+        """Approving client_ready_for_dev with empty translation ref → DEPRECATION WARNING."""
+        content = make_status_md(
+            mode="Client", phase="handover",
+            approvals={"client_ready_for_dev": "pending"},
+            refs={"translation": "null"},
+        )
+        with TempProject(content) as root:
+            # Create translation/mapping.md so the existing file check passes.
+            trans_dir = Path(root) / "docs" / "translation"
+            trans_dir.mkdir(parents=True)
+            (trans_dir / "mapping.md").write_text("# Mapping\n")
+            rc, out = run_check(root, "--pre-approve-gate", "client_ready_for_dev")
+            self.assertEqual(rc, 0, f"Should still allow (deprecation): {out}")
+            self.assertIn("DEPRECATION WARNING", out,
+                          f"Should warn about empty translation ref: {out}")
+
+
+# =============================================================================
+# P2c: secrets hook recursive search
+# =============================================================================
+
+
+class TestSecretsHookMonorepo(unittest.TestCase):
+    """Verify check-secrets.sh detects .env files in subdirectories."""
+
+    HOOK_SRC = ROOT / "hooks" / "check-secrets.sh"
+
+    def _setup_git_project(self) -> tuple[tempfile.TemporaryDirectory, str]:
+        """Create a temp git project with hooks and lib."""
+        import shutil
+        tmpdir = tempfile.TemporaryDirectory()
+        root = tmpdir.name
+        root_path = Path(root)
+
+        # Init git repo so git rev-parse works.
+        subprocess.run(["git", "init"], cwd=root, capture_output=True)
+        subprocess.run(
+            ["git", "config", "user.email", "test@test.com"],
+            cwd=root, capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "test"],
+            cwd=root, capture_output=True,
+        )
+
+        # Copy hook and lib.
+        hooks_dir = root_path / "hooks"
+        hooks_dir.mkdir()
+        shutil.copy2(self.HOOK_SRC, hooks_dir / "check-secrets.sh")
+        lib_dir = hooks_dir / "lib"
+        lib_dir.mkdir()
+        (lib_dir / "extract-input.sh").symlink_to(
+            ROOT / "hooks" / "lib" / "extract-input.sh"
+        )
+        return tmpdir, root
+
+    def _run_hook(self, root: str, cmd: str) -> tuple[int, str]:
+        """Run check-secrets.sh with a Bash command input."""
+        hook_path = Path(root) / "hooks" / "check-secrets.sh"
+        stdin = f'{{"tool_name":"Bash","tool_input":{{"command":"{cmd}"}}}}'
+        result = subprocess.run(
+            ["bash", str(hook_path)],
+            input=stdin,
+            capture_output=True,
+            text=True,
+            env={**os.environ, "HOME": root},
+            cwd=root,
+        )
+        return result.returncode, result.stdout.strip()
+
+    def test_subdirectory_env_detected_on_git_add_all(self):
+        """git add -A with .env in subdirectory → deny."""
+        tmpdir, root = self._setup_git_project()
+        try:
+            # Create .env in a subdirectory (monorepo pattern).
+            api_dir = Path(root) / "services" / "api"
+            api_dir.mkdir(parents=True)
+            (api_dir / ".env").write_text("SECRET_KEY=xxx\n")
+            rc, out = self._run_hook(root, "git add -A")
+            self.assertEqual(rc, 0)
+            self.assertIn('"permissionDecision":"deny"', out,
+                          f"Subdirectory .env should be detected: {out}")
+        finally:
+            tmpdir.cleanup()
+
+    def test_safe_variants_excluded(self):
+        """git add -A with only .env.example in subdirectory → allow."""
+        tmpdir, root = self._setup_git_project()
+        try:
+            api_dir = Path(root) / "services" / "api"
+            api_dir.mkdir(parents=True)
+            (api_dir / ".env.example").write_text("SECRET_KEY=\n")
+            rc, out = self._run_hook(root, "git add -A")
+            self.assertEqual(rc, 0)
+            self.assertEqual(out, "{}", f"Safe .env.example should be allowed: {out}")
+        finally:
+            tmpdir.cleanup()
+
+    def test_node_modules_excluded(self):
+        """git add -A with .env inside node_modules → allow (ignored)."""
+        tmpdir, root = self._setup_git_project()
+        try:
+            nm_dir = Path(root) / "node_modules" / "some-pkg"
+            nm_dir.mkdir(parents=True)
+            (nm_dir / ".env").write_text("INTERNAL=val\n")
+            rc, out = self._run_hook(root, "git add -A")
+            self.assertEqual(rc, 0)
+            self.assertEqual(out, "{}", f"node_modules .env should be ignored: {out}")
+        finally:
+            tmpdir.cleanup()
+
+
+# =============================================================================
+# P2b: templates integrity protection
+# =============================================================================
+
+
+class TestTemplateProtection(unittest.TestCase):
+    """Verify check-gate.sh blocks template edits during project work."""
+
+    def _setup_hooks_project(self, task_type: str = "feature") -> tuple[
+        tempfile.TemporaryDirectory, str
+    ]:
+        """Create a temp project with check-gate.sh and STATUS.md."""
+        import shutil
+        tmpdir = tempfile.TemporaryDirectory()
+        root = tmpdir.name
+        root_path = Path(root)
+
+        # Create STATUS.md.
+        content = make_status_md(
+            phase="implement", task_type=task_type,
+            approvals={"brainstorm": "approved", "plan": "approved"},
+        )
+        docs = root_path / "docs"
+        docs.mkdir()
+        (docs / "STATUS.md").write_text(content, encoding="utf-8")
+
+        # Copy hook and lib.
+        hooks_dir = root_path / "hooks"
+        hooks_dir.mkdir()
+        shutil.copy2(ROOT / "hooks" / "check-gate.sh", hooks_dir / "check-gate.sh")
+        lib_dir = hooks_dir / "lib"
+        lib_dir.mkdir()
+        (lib_dir / "extract-input.sh").symlink_to(
+            ROOT / "hooks" / "lib" / "extract-input.sh"
+        )
+        return tmpdir, root
+
+    def _run_hook(self, root: str, file_path: str) -> tuple[int, str]:
+        """Run check-gate.sh with an Edit targeting file_path."""
+        hook_path = Path(root) / "hooks" / "check-gate.sh"
+        stdin = f'{{"tool_name":"Edit","tool_input":{{"file_path":"{file_path}"}}}}'
+        result = subprocess.run(
+            ["bash", str(hook_path)],
+            input=stdin,
+            capture_output=True,
+            text=True,
+            cwd=root,
+        )
+        return result.returncode, result.stdout.strip()
+
+    def test_template_edit_blocked_during_project_work(self):
+        """Edit to templates/ during feature work → deny."""
+        tmpdir, root = self._setup_hooks_project(task_type="feature")
+        try:
+            rc, out = self._run_hook(root, "templates/hooks.template.json")
+            self.assertEqual(rc, 0)
+            self.assertIn('"permissionDecision":"deny"', out,
+                          f"Template edit should be blocked: {out}")
+            self.assertIn("integrity", out,
+                          f"Deny should mention integrity: {out}")
+        finally:
+            tmpdir.cleanup()
+
+    def test_template_edit_allowed_for_framework_task(self):
+        """Edit to templates/ during framework work → allow."""
+        tmpdir, root = self._setup_hooks_project(task_type="framework")
+        try:
+            rc, out = self._run_hook(root, "templates/hooks.template.json")
+            self.assertEqual(rc, 0)
+            self.assertEqual(out, "{}", f"Framework task should allow template edit: {out}")
+        finally:
+            tmpdir.cleanup()
+
+
+# =============================================================================
+# P1: check-control-plane.sh allowlist redirect bypass
+# =============================================================================
+
+
+class TestControlPlaneAllowlistBypass(unittest.TestCase):
+    """Verify check-control-plane.sh blocks allowlisted commands with redirect."""
+
+    HOOK_SRC = ROOT / "hooks" / "check-control-plane.sh"
+
+    def _setup_project(self, task_type: str = "feature") -> tuple[
+        tempfile.TemporaryDirectory, str
+    ]:
+        """Create temp project with check-control-plane.sh and STATUS.md."""
+        import shutil
+        tmpdir = tempfile.TemporaryDirectory()
+        root = tmpdir.name
+        root_path = Path(root)
+
+        content = make_status_md(
+            phase="implement", task_type=task_type,
+            approvals={"brainstorm": "approved", "plan": "approved",
+                        "client_ready_for_dev": "approved"},
+        )
+        docs = root_path / "docs"
+        docs.mkdir(exist_ok=True)
+        (docs / "STATUS.md").write_text(content, encoding="utf-8")
+
+        hooks_dir = root_path / "hooks"
+        hooks_dir.mkdir(exist_ok=True)
+        shutil.copy2(self.HOOK_SRC, hooks_dir / "check-control-plane.sh")
+        lib_dir = hooks_dir / "lib"
+        lib_dir.mkdir()
+        (lib_dir / "extract-input.sh").symlink_to(
+            ROOT / "hooks" / "lib" / "extract-input.sh"
+        )
+        return tmpdir, root
+
+    def _run_hook(self, root: str, cmd: str) -> tuple[int, str]:
+        """Run check-control-plane.sh with a Bash command input."""
+        import json
+        stdin = json.dumps({
+            "tool_name": "Bash",
+            "tool_input": {"command": cmd},
+        })
+        hook_path = Path(root) / "hooks" / "check-control-plane.sh"
+        result = subprocess.run(
+            ["bash", str(hook_path)],
+            input=stdin,
+            capture_output=True,
+            text=True,
+            env={**os.environ, "HOME": root},
+            cwd=root,
+        )
+        return result.returncode, result.stdout.strip()
+
+    def test_allowlisted_script_with_redirect_denied(self):
+        """Allowlisted script + > redirect → deny (write bypass attempt)."""
+        tmpdir, root = self._setup_project(task_type="feature")
+        try:
+            rc, out = self._run_hook(
+                root,
+                "python3 scripts/check_status.py --root . > /tmp/pwn.txt",
+            )
+            self.assertEqual(rc, 0)
+            self.assertIn('"permissionDecision":"deny"', out,
+                          f"Allowlisted script + redirect should be denied: {out}")
+        finally:
+            tmpdir.cleanup()
+
+    def test_allowlisted_script_with_append_redirect_denied(self):
+        """Allowlisted script + >> redirect → deny."""
+        tmpdir, root = self._setup_project(task_type="feature")
+        try:
+            rc, out = self._run_hook(
+                root,
+                "python3 scripts/check_status.py --root . >> /tmp/pwn.txt",
+            )
+            self.assertEqual(rc, 0)
+            self.assertIn('"permissionDecision":"deny"', out,
+                          f"Allowlisted script + >> should be denied: {out}")
+        finally:
+            tmpdir.cleanup()
+
+    def test_allowlisted_script_plain_allowed(self):
+        """Allowlisted script without redirect → allow."""
+        tmpdir, root = self._setup_project(task_type="feature")
+        try:
+            rc, out = self._run_hook(
+                root,
+                "python3 scripts/check_status.py --root .",
+            )
+            self.assertEqual(rc, 0)
+            self.assertEqual(out, "{}",
+                             f"Plain allowlisted script should be allowed: {out}")
+        finally:
+            tmpdir.cleanup()
+
+    def test_non_allowlisted_command_with_control_plane_denied(self):
+        """Non-allowlisted command referencing control plane → deny."""
+        tmpdir, root = self._setup_project(task_type="feature")
+        try:
+            rc, out = self._run_hook(
+                root,
+                "python3 -c 'open(\"docs/STATUS.md\").read()'",
+            )
+            self.assertEqual(rc, 0)
+            self.assertIn('"permissionDecision":"deny"', out,
+                          f"Non-allowlisted control plane command should be denied: {out}")
+        finally:
+            tmpdir.cleanup()
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 ---
 framework: ultra-framework-claude-code
-framework_version: "0.12.0"
+framework_version: "0.12.1"
 project_name: "Ultra Framework Claude Code"
 mode: Dev
 phase: review
@@ -14,7 +14,7 @@ gate_approvals:
   client_ready_for_dev: n/a
   brainstorm: approved
   plan: approved
-  review: pending
+  review: approved
   qa: pending
   security: pending
   deploy: pending
@@ -23,7 +23,7 @@ current_refs:
   requirements: []
   plan: "docs/plans/v0100-browser-assist-plan.md"
   spec: null
-  review: null
+  review: docs/qa-reports/v0120-review.md
   qa: null
   security: null
   deploy: null
@@ -33,7 +33,7 @@ external_evidence:
     scope: "v0.12.0 計画レビュー"
     findings: "Item 3 延期、push matcher 除外、ref check 移行パス追加、テスト強化"
     resolution: "4点すべて反映し計画を修正"
-next_action: "review ゲート申請。全48テスト PASS + contract PASS + lint 0 issues を根拠とする。"
+next_action: "v0.12.1 レビュー修正完了。qa ゲートへ進む。118テスト PASS + tier 1/2 PASS を根拠とする。"
 blockers: []
 failure_tracking: null
 session_history:
@@ -45,6 +45,10 @@ session_history:
     mode: Dev
     phase: "implement"
     note: "v0.12.0 実装完了。MCP deploy gate + ref check 強化 + name lint + health check。48テスト全PASS。"
+  - date: "2026-04-22"
+    mode: Dev
+    phase: "review"
+    note: "v0.12.0→v0.12.1 レビュー2ラウンド。Client/Dev境界・n/a model・reset ref・template保護等11件修正。118テスト全PASS。"
 ---
 
 ## Summary

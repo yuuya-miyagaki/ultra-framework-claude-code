@@ -44,15 +44,15 @@ extract_gate() {
   grep -A20 "^gate_approvals:" "$file" | grep -m1 "${gate}:" | sed "s/.*${gate}:[[:space:]]*//" | sed 's/^"//;s/"$//' || true
 }
 
-# Check ALL gates for unauthorized advancement.
-# Detect any transition TO approved from a non-approved state.
-# This covers direct (pending→approved) and bypass (pending→blocked→approved) routes.
+# Check ALL gates for unauthorized value changes.
+# Detect ANY change (not just →approved) to prevent bypass via direct edit.
+# Authorized changes go through update-gate.sh which updates the snapshot atomically.
 for gate in client_ready_for_dev brainstorm plan review qa security deploy dev_ready_for_client; do
   OLD=$(extract_gate "$SNAPSHOT_FILE" "$gate")
   NEW=$(extract_gate "$STATUS_FILE" "$gate")
 
-  if [ "$OLD" != "approved" ] && [ "$OLD" != "" ] && [ "$NEW" = "approved" ]; then
-    printf '{"permissionDecision":"deny","message":"[gate-tamper] %s gate advanced %s→approved without explicit user approval. Revert the change and request user approval via the /gate command."}\n' "$gate" "$OLD"
+  if [ "$OLD" != "$NEW" ] && [ -n "$OLD" ]; then
+    printf '{"permissionDecision":"deny","message":"[gate-tamper] %s gate changed %s→%s without authorization. Use the /gate command to change gate values."}\n' "$gate" "$OLD" "$NEW"
     exit 0
   fi
 done
@@ -74,11 +74,39 @@ if [ -n "$OLD_PHASE" ] && [ -n "$NEW_PHASE" ] && [ "$OLD_PHASE" != "$NEW_PHASE" 
   fi
 fi
 
+# --- Mode change validation ---
+OLD_MODE=$(grep -m1 "^mode:" "$SNAPSHOT_FILE" | sed "s/^mode:[[:space:]]*//" | sed 's/^"//;s/"$//' || true)
+NEW_MODE=$(grep -m1 "^mode:" "$STATUS_FILE" | sed "s/^mode:[[:space:]]*//" | sed 's/^"//;s/"$//' || true)
+
+if [ -n "$OLD_MODE" ] && [ -n "$NEW_MODE" ] && [ "$OLD_MODE" != "$NEW_MODE" ]; then
+  # Mode changed — verify boundary gate.
+  extract_gate_from_status() {
+    local gate="$1"
+    grep -A20 "^gate_approvals:" "$STATUS_FILE" | grep -m1 "${gate}:" | sed "s/.*${gate}:[[:space:]]*//" | sed 's/^"//;s/"$//' || true
+  }
+
+  if [ "$OLD_MODE" = "Client" ] && [ "$NEW_MODE" = "Dev" ]; then
+    BOUNDARY_GATE=$(extract_gate_from_status "client_ready_for_dev")
+    if [ "$BOUNDARY_GATE" != "approved" ]; then
+      printf '{"permissionDecision":"deny","message":"[mode-tamper] Mode changed Client→Dev but client_ready_for_dev is '\''%s'\'' (must be approved). Use /gate approve client_ready_for_dev first."}\n' "$BOUNDARY_GATE"
+      exit 0
+    fi
+  elif [ "$OLD_MODE" = "Dev" ] && [ "$NEW_MODE" = "Client" ]; then
+    BOUNDARY_GATE=$(extract_gate_from_status "dev_ready_for_client")
+    if [ "$BOUNDARY_GATE" != "approved" ]; then
+      printf '{"permissionDecision":"deny","message":"[mode-tamper] Mode changed Dev→Client but dev_ready_for_client is '\''%s'\'' (must be approved). Use /gate approve dev_ready_for_client first."}\n' "$BOUNDARY_GATE"
+      exit 0
+    fi
+  fi
+fi
+
 # No tampering or invalid transition detected. Update snapshot to reflect legitimate changes.
 # Extract gate_approvals section for next comparison.
 sed -n '/^gate_approvals:/,/^[a-z]/{ /^gate_approvals:/p; /^  /p; }' "$STATUS_FILE" > "$SNAPSHOT_FILE" 2>/dev/null || true
 # Preserve phase in snapshot.
 grep -m1 "^phase:" "$STATUS_FILE" >> "$SNAPSHOT_FILE" 2>/dev/null || true
+# Preserve mode in snapshot.
+grep -m1 "^mode:" "$STATUS_FILE" >> "$SNAPSHOT_FILE" 2>/dev/null || true
 
 echo '{}'
 exit 0

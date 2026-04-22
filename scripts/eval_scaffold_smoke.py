@@ -17,6 +17,8 @@ REPO_ROOT = SCRIPTS_DIR.parent
 SETUP_SH = REPO_ROOT / "bin" / "setup.sh"
 CONTRACT_PY = SCRIPTS_DIR / "check_framework_contract.py"
 
+# full profile validates the framework repo itself (not a scaffolded project),
+# so it is tested by tier 1, not scaffold smoke tests.
 PROFILES = ["minimal", "standard"]
 
 

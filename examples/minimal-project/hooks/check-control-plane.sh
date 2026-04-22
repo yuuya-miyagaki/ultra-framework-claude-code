@@ -34,7 +34,7 @@ if [ ! -f "$STATUS_FILE" ]; then
 fi
 
 # Control plane path patterns.
-CONTROL_PLANE='STATUS\.md|CLAUDE\.md|\.claude/|\.claude[^A-Za-z0-9_/]|hooks/|scripts/'
+CONTROL_PLANE='STATUS\.md|CLAUDE\.md|\.claude/|\.claude[^A-Za-z0-9_/]|hooks/|scripts/|templates/'
 
 # Check the RAW input for control plane paths. This avoids extract_command
 # truncation on commands with internal quotes (e.g. python3 -c "...STATUS.md...").
@@ -47,9 +47,10 @@ fi
 # Input references a control plane path. Extract the command for further checks.
 CMD=$(extract_command "$INPUT")
 
-# Chain operators that indicate compound commands. If present, the command
-# is never eligible for allowlist or read-only pass-through.
-CHAIN_OPS='[;&|]|\$\(|`'
+# Chain/redirect operators that indicate compound or write commands. If present,
+# the command is never eligible for allowlist or read-only pass-through.
+# Includes > and >> to block "allowlisted_script > file" write bypass.
+CHAIN_OPS='[;&|>]|\$\(|`'
 
 # --- Allowlist check ---
 # Only if the command has NO chaining operators, check if it is solely an

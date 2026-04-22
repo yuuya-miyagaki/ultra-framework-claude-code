@@ -31,7 +31,7 @@ current_refs:
   qa: docs/qa-reports/search-qa.md
   security: docs/qa-reports/search-security.md
   deploy: null
-  translation: null
+  translation: docs/translation/mapping.md
 next_action: "TO-CLIENT.md を共有し、Dev 完了を Client に handoff する。"
 blockers: []
 session_history:
